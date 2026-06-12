@@ -133,37 +133,35 @@ export default function AssessmentGuidePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f5f7fb] px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+    <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
         <ProgressSteps currentStep="guidance" />
 
-        <header className="flex flex-col justify-between gap-4 rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm sm:flex-row sm:items-center">
+        <header className="card flex flex-col justify-between gap-4 px-6 py-6 sm:flex-row sm:items-center">
           <div>
-            <p className="text-sm font-medium text-slate-500">
-              Assessment guide
-            </p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-normal text-slate-950">
+            <p className="eyebrow">Assessment guide</p>
+            <h1 className="title-lg mt-2">
               Get Ready Before You Start Working
             </h1>
-            <p className="mt-1 text-sm text-slate-500">{candidateName}</p>
+            <p className="text-secondary-apple mt-2">{candidateName}</p>
           </div>
         </header>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-          <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-200 px-5 py-4">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-                <MonitorPlay className="h-4 w-4 text-slate-500" />
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+          <section className="card">
+            <div className="card-header">
+              <div className="flex items-center gap-2 text-[15px] font-semibold text-[#1d1d1f]">
+                <MonitorPlay className="h-4 w-4 text-[#86868b]" />
                 Guide video
               </div>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
+              <p className="text-secondary-apple mt-2">
                 Watch this short walkthrough before entering the assignment
                 workspace. The timer has not started yet.
               </p>
             </div>
 
-            <div className="p-5">
-              <div className="aspect-video overflow-hidden rounded-lg border border-slate-200 bg-slate-950">
+            <div className="card-body">
+              <div className="aspect-video overflow-hidden rounded-xl bg-[#1d1d1f]">
                 {embedUrl ? (
                   <iframe
                     src={embedUrl}
@@ -174,12 +172,12 @@ export default function AssessmentGuidePage() {
                   />
                 ) : (
                   <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white">
-                    <MonitorPlay className="h-10 w-10 text-slate-300" />
+                    <MonitorPlay className="h-10 w-10 text-white/60" />
                     <div>
-                      <p className="text-base font-semibold">
+                      <p className="text-[15px] font-semibold">
                         Guide video placeholder
                       </p>
-                      <p className="mt-1 max-w-md text-sm leading-6 text-slate-300">
+                      <p className="mt-1 max-w-md text-sm leading-6 text-white/60">
                         Add `NEXT_PUBLIC_GUIDE_VIDEO_URL` in `.env.local` with a
                         YouTube, Loom, or Vimeo link to embed the video here.
                       </p>
@@ -189,57 +187,55 @@ export default function AssessmentGuidePage() {
               </div>
             </div>
 
-            <div className="border-t border-slate-200 p-5">
+            <div className="border-t border-black/[0.06] p-6">
               <div
-                className={`flex flex-col justify-between gap-3 rounded-lg border px-4 py-3 sm:flex-row sm:items-center ${
-                  isExpired
-                    ? "border-red-200 bg-red-50 text-red-700"
-                    : "border-emerald-200 bg-emerald-50 text-emerald-900"
+                className={`flex flex-col justify-between gap-3 rounded-xl bg-[#f5f5f7] px-5 py-4 sm:flex-row sm:items-center ${
+                  isExpired ? "text-[#d70015]" : "text-[#1d1d1f]"
                 }`}
               >
                 <div>
-                  <div className="flex items-center gap-2 text-sm font-semibold">
+                  <div className="flex items-center gap-2 text-[14px] font-semibold">
                     <Clock3 className="h-4 w-4" />
                     Assessment timer
                   </div>
-                  <p className="mt-1 text-sm opacity-80">
+                  <p className="mt-1 text-[13px] text-[#6e6e73]">
                   The countdown starts only after you click Start Assessment below.
                   </p>
                 </div>
-                <div className="text-2xl font-semibold tabular-nums">
+                <div className="text-[28px] font-semibold tabular-nums tracking-[-0.02em]">
                   {timeRemaining}
                 </div>
               </div>
             </div>
           </section>
 
-          <aside className="space-y-6">
-            <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-                <ShieldCheck className="h-4 w-4 text-slate-500" />
+          <aside className="space-y-5">
+            <section className="card p-6">
+              <div className="flex items-center gap-2 text-[15px] font-semibold text-[#1d1d1f]">
+                <ShieldCheck className="h-4 w-4 text-[#86868b]" />
                 Readiness checklist
               </div>
               <ul className="mt-4 space-y-3">
                 {checklist.map((item) => (
-                  <li key={item} className="flex gap-3 text-sm leading-6 text-slate-600">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                  <li key={item} className="flex gap-3 text-sm leading-6 text-[#6e6e73]">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#1d1d1f]" />
                     {item}
                   </li>
                 ))}
               </ul>
             </section>
 
-            <section className="rounded-lg border border-blue-200 bg-blue-50 p-5">
-              <div className="flex items-center gap-2 text-sm font-semibold text-blue-950">
-                <FileText className="h-4 w-4" />
+            <section className="card p-6">
+              <div className="flex items-center gap-2 text-[15px] font-semibold text-[#1d1d1f]">
+                <FileText className="h-4 w-4 text-[#86868b]" />
                 Next screen
               </div>
-              <p className="mt-2 text-sm leading-6 text-blue-950/80">
+              <p className="text-secondary-apple mt-2">
                 The workspace contains three assessment tasks, manual progress
                 save, file/link fields, and final submission validation.
               </p>
               {startError ? (
-                <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700">
+                <p className="mt-3 rounded-xl bg-[#f5f5f7] px-4 py-3 text-[13px] font-medium text-[#d70015]">
                   {startError}
                 </p>
               ) : null}
@@ -247,7 +243,7 @@ export default function AssessmentGuidePage() {
                 type="button"
                 onClick={startAssessment}
                 disabled={isStarting}
-                className="game-button mt-4 w-full"
+                className="game-button mt-5 w-full"
               >
                 {isStarting ? (
                   <>
