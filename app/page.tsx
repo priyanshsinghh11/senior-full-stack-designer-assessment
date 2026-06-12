@@ -285,25 +285,25 @@ export default function CandidateInformationPage() {
                 </div>
               </div>
 
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+              <div className="note">
                 <label className="flex gap-3">
                   <input
                     type="checkbox"
                     {...register("agreementConfirmed")}
-                    className="mt-1 h-4 w-4 rounded border-slate-300 text-slate-950"
+                    className="mt-1 h-4 w-4 rounded border-[#d2d2d7] accent-[#1d1d1f]"
                   />
                   <span>
-                    <span className="block text-sm font-medium text-slate-900">
+                    <span className="block text-[14px] font-medium text-[#1d1d1f]">
                       I confirm that this assessment submission is my own work.
                     </span>
-                    <span className="mt-1 block text-sm text-slate-500">
+                    <span className="mt-1 block text-[13px] text-[#6e6e73]">
                       Your candidate information will be used for this
                       assessment.
                     </span>
                   </span>
                 </label>
                 {errors.agreementConfirmed?.message ? (
-                  <p className="mt-2 text-sm font-medium text-red-600">
+                  <p className="field-error mt-3">
                     {errors.agreementConfirmed.message}
                   </p>
                 ) : null}
@@ -316,8 +316,8 @@ export default function CandidateInformationPage() {
                 <StatusMessage tone="success" message={submitSuccess} />
               ) : null}
 
-              <div className="flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-slate-500">
+              <div className="flex flex-col gap-3 border-t border-black/[0.06] pt-6 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-secondary-apple">
                   Only personal information and agreement are required for now.
                 </p>
                 <button
@@ -360,13 +360,13 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 flex items-center gap-1 text-sm font-medium text-slate-700">
+      <span className="field-label flex items-center gap-1">
         {label}
-        {required ? <span className="text-red-500">*</span> : null}
+        {required ? <span className="text-[#d70015]">*</span> : null}
       </span>
       {children}
-      {hint && !error ? <span className="mt-1 block text-xs text-slate-500">{hint}</span> : null}
-      {error ? <span className="mt-1 block text-xs font-medium text-red-600">{error}</span> : null}
+      {hint && !error ? <span className="field-hint">{hint}</span> : null}
+      {error ? <span className="field-error">{error}</span> : null}
     </label>
   );
 }
@@ -382,10 +382,8 @@ function StatusMessage({
 
   return (
     <div
-      className={`flex items-start gap-2 rounded-md border px-3 py-2 text-sm font-medium ${
-        isError
-          ? "border-red-200 bg-red-50 text-red-700"
-          : "border-emerald-200 bg-emerald-50 text-emerald-800"
+      className={`flex items-start gap-2 rounded-xl bg-[#f5f5f7] px-4 py-3 text-[14px] font-medium ${
+        isError ? "text-[#d70015]" : "text-[#1d1d1f]"
       }`}
     >
       {isError ? null : <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />}
