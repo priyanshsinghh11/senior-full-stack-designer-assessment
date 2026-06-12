@@ -70,6 +70,7 @@ export default function WorkspacePage() {
     if (typeof window === "undefined") return false;
     return localStorage.getItem(submittedKey) === "true";
   });
+  const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
   const [now, setNow] = useState(() => new Date());
 
@@ -230,8 +231,8 @@ export default function WorkspacePage() {
     localStorage.setItem(submittedKey, "true");
     localStorage.setItem("assessmentSubmittedAt", new Date().toISOString());
     setIsSubmitted(true);
-    setSubmitMessage("Assessment submitted successfully. Redirecting...");
-    router.push("/confirmation");
+    setSubmitMessage("Assessment submitted successfully.");
+    setShowSubmitModal(true);
   }
 
   return (
@@ -476,6 +477,47 @@ export default function WorkspacePage() {
           </section>
         </div>
       </div>
+
+      {showSubmitModal ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="submit-success-title"
+        >
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 text-center shadow-[0_20px_70px_rgba(0,0,0,0.18)]">
+            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f5f7] text-[#1d1d1f]">
+              <CheckCircle2 className="h-6 w-6" />
+            </span>
+            <h2
+              id="submit-success-title"
+              className="mt-4 text-[22px] font-semibold tracking-[-0.022em] text-[#1d1d1f]"
+            >
+              Assessment submitted
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-[#6e6e73]">
+              Your work is locked and ready for review. You can now view the
+              final submission confirmation.
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => router.push("/confirmation")}
+                className="game-button flex-1"
+              >
+                View confirmation
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowSubmitModal(false)}
+                className="game-button-secondary flex-1"
+              >
+                Stay here
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
