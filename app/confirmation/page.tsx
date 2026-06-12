@@ -29,29 +29,27 @@ export default function SubmissionConfirmationPage() {
   }, [submittedAt]);
 
   return (
-    <main className="min-h-screen bg-[#f5f7fb] px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+    <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
         <ProgressSteps currentStep="submit" />
 
-        <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 px-5 py-5">
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+        <section className="card">
+          <div className="card-header py-6">
+            <div className="flex items-center gap-4">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#1d1d1f] text-white">
                 <CheckCircle2 className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-sm font-medium text-slate-500">
-                  Submission confirmation
-                </p>
-                <h1 className="mt-1 text-2xl font-semibold tracking-normal text-slate-950">
+                <p className="eyebrow">Submission confirmation</p>
+                <h1 className="title-lg mt-1.5">
                   Assessment Submitted Successfully
                 </h1>
               </div>
             </div>
           </div>
 
-          <div className="space-y-6 p-5">
-            <p className="text-sm leading-6 text-slate-600">
+          <div className="space-y-6 p-6">
+            <p className="text-secondary-apple">
               Thank you for completing the Senior Full Stack Designer Assessment.
               Our team will review your submission and contact you regarding next
               steps.
@@ -65,24 +63,19 @@ export default function SubmissionConfirmationPage() {
             </div>
 
             {sessionId ? (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                <p className="text-xs font-medium uppercase tracking-normal text-slate-500">
-                  Submission ID
-                </p>
-                <p className="mt-1 break-all text-sm font-medium text-slate-800">
+              <div className="note px-4 py-3">
+                <p className="eyebrow">Submission ID</p>
+                <p className="mt-1 break-all text-sm font-medium text-[#1d1d1f]">
                   {sessionId}
                 </p>
               </div>
             ) : null}
 
-            <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-950/80">
+            <div className="note px-4 py-3 text-sm leading-6 text-[#6e6e73]">
               No further edits are allowed after submission.
             </div>
 
-            <Link
-              href="/"
-              className="inline-flex min-h-11 items-center justify-center rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
-            >
+            <Link href="/" className="game-button-secondary">
               Back to Candidate Info
             </Link>
           </div>
@@ -102,12 +95,12 @@ function InfoCard({
   value: string;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-normal text-slate-500">
+    <div className="rounded-xl bg-[#f5f5f7] p-4">
+      <div className="flex items-center gap-2 text-[#86868b]">
         {icon}
-        {label}
+        <span className="eyebrow">{label}</span>
       </div>
-      <p className="mt-2 text-sm font-semibold text-slate-950">{value}</p>
+      <p className="mt-2 text-[15px] font-semibold text-[#1d1d1f]">{value}</p>
     </div>
   );
 }
