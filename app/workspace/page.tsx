@@ -235,32 +235,30 @@ export default function WorkspacePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f5f7fb] px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+    <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
         <ProgressSteps currentStep="assessment" />
 
-        <header className="rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <header className="card">
+          <div className="flex flex-col gap-4 border-b border-black/[0.06] px-6 py-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="text-sm font-medium text-slate-500">
-                Assessment workspace
-              </p>
-              <h1 className="mt-1 text-2xl font-semibold tracking-normal text-slate-950">
+              <p className="eyebrow">Assessment workspace</p>
+              <h1 className="title-lg mt-2">
                 Senior Full Stack Designer Assessment
               </h1>
-              <p className="mt-1 text-sm text-slate-500">{candidateName}</p>
+              <p className="text-secondary-apple mt-2">{candidateName}</p>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-4 text-sm font-semibold text-slate-800">
-                <Clock3 className="h-4 w-4 text-slate-500" />
+              <div className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#f5f5f7] px-5 text-[15px] font-semibold tabular-nums text-[#1d1d1f]">
+                <Clock3 className="h-4 w-4 text-[#86868b]" />
                 {timeRemaining}
               </div>
               <button
                 type="button"
                 onClick={saveProgress}
                 disabled={workspaceLocked}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400"
+                className="game-button-secondary"
               >
                 <Save className="h-4 w-4" />
                 Save Progress
@@ -269,7 +267,7 @@ export default function WorkspacePage() {
                 type="button"
                 onClick={submitAssessment}
                 disabled={workspaceLocked}
-                className="game-button px-4"
+                className="game-button"
               >
                 {workspaceLocked ? <LockKeyhole className="h-4 w-4" /> : <Send className="h-4 w-4" />}
                 {isSubmitted ? "Submitted" : isExpired ? "Expired" : "Submit Assessment"}
@@ -277,7 +275,7 @@ export default function WorkspacePage() {
             </div>
           </div>
 
-          <div className="grid gap-3 px-5 py-4 md:grid-cols-3">
+          <div className="grid gap-3 px-6 py-5 md:grid-cols-3">
             <StatusTile label="Required completed" value={`${completedRequired}/3`} />
             <StatusTile
               label="Manual save"
@@ -291,26 +289,20 @@ export default function WorkspacePage() {
         </header>
 
         {isExpired && !isSubmitted ? (
-          <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          <div className="card px-5 py-4 text-[14px] font-medium text-[#d70015]">
             The 4-hour timer has expired. The workspace is now locked.
           </div>
         ) : null}
 
         {submitMessage ? (
-          <div
-            className={`rounded-md border px-4 py-3 text-sm font-medium ${
-              isSubmitted
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : "border-blue-200 bg-blue-50 text-blue-900"
-            }`}
-          >
+          <div className="card px-5 py-4 text-[14px] font-medium text-[#1d1d1f]">
             {submitMessage}
           </div>
         ) : null}
 
-        <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm xl:sticky xl:top-6 xl:self-start">
-            <p className="text-sm font-semibold text-slate-800">Tasks</p>
+        <div className="grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)]">
+          <aside className="card p-5 xl:sticky xl:top-6 xl:self-start">
+            <p className="eyebrow">Tasks</p>
             <nav className="mt-3 space-y-2">
               {[
                 ["task-1", "Website Redesign"],
@@ -320,9 +312,9 @@ export default function WorkspacePage() {
                 <a
                   key={href}
                   href={`#${href}`}
-                  className="flex items-center gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-white"
+                  className="flex items-center gap-3 rounded-xl bg-[#f5f5f7] px-3.5 py-2.5 text-[14px] font-medium text-[#1d1d1f] transition-all duration-200 hover:bg-[#e8e8ed]"
                 >
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs font-semibold ring-1 ring-slate-200">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-[11px] font-semibold text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">
                     {index + 1}
                   </span>
                   {label}
@@ -331,7 +323,7 @@ export default function WorkspacePage() {
             </nav>
           </aside>
 
-          <section className="space-y-6">
+          <section className="space-y-5">
             <TaskCard
               id="task-1"
               number="1"
@@ -339,19 +331,19 @@ export default function WorkspacePage() {
               objective="Redesign the AJAIA homepage to improve layout, visual hierarchy, conversion, and responsiveness. Include a written description of the animations, hover states, and microinteractions you would use."
               required
             >
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-                <p className="text-sm font-semibold text-blue-950">
+              <div className="note">
+                <p className="text-[14px] font-semibold text-[#1d1d1f]">
                   Source page
                 </p>
                 <a
                   href="https://ajaia.ai/"
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-1 inline-flex text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
+                  className="mt-1 inline-flex text-[14px] font-medium text-[#1d1d1f] underline underline-offset-4 decoration-[#d2d2d7] transition hover:decoration-[#1d1d1f]"
                 >
                   https://ajaia.ai/
                 </a>
-                <ul className="mt-3 grid gap-2 text-sm leading-6 text-blue-950/80 md:grid-cols-2">
+                <ul className="mt-3 grid gap-2 text-sm leading-6 text-[#6e6e73] md:grid-cols-2">
                   <li>Improve layout and section structure.</li>
                   <li>Clarify visual hierarchy and messaging priority.</li>
                   <li>Strengthen conversion paths and calls to action.</li>
@@ -393,11 +385,11 @@ export default function WorkspacePage() {
               objective="Design a user journey and key screens for a real-time, HIPAA-ready healthcare translation app."
               required
             >
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                <p className="text-sm font-semibold text-emerald-950">
+              <div className="note">
+                <p className="text-[14px] font-semibold text-[#1d1d1f]">
                   Required deliverables
                 </p>
-                <ul className="mt-3 grid gap-2 text-sm leading-6 text-emerald-950/80 md:grid-cols-2">
+                <ul className="mt-3 grid gap-2 text-sm leading-6 text-[#6e6e73] md:grid-cols-2">
                   <li>User journey from patient intake to translated conversation.</li>
                   <li>Key screens for patient, clinician, and interpreter/AI assistance.</li>
                   <li>Real-time translation states: listening, translating, reviewing, and confirming.</li>
@@ -426,16 +418,16 @@ export default function WorkspacePage() {
               objective="Create a LinkedIn post and supporting B2B graphic from the AI Reality Check report."
               required
             >
-              <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
-                <p className="text-sm font-semibold text-indigo-950">
+              <div className="note">
+                <p className="text-[14px] font-semibold text-[#1d1d1f]">
                   Required deliverables
                 </p>
-                <ul className="mt-3 grid gap-2 text-sm leading-6 text-indigo-950/80 md:grid-cols-2">
+                <ul className="mt-3 grid gap-2 text-sm leading-6 text-[#6e6e73] md:grid-cols-2">
                   <li>LinkedIn post copy written in the editor below.</li>
                   <li>Supporting B2B graphic uploaded as an image/PDF or linked from Figma.</li>
                 </ul>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="rounded-xl bg-[#f5f5f7] p-4">
                 <div className="mb-3 flex flex-wrap gap-2">
                   <ToolbarButton label="Bold" onClick={() => insertFormatting("**")} disabled={workspaceLocked}>
                     <Type className="h-4 w-4" />
@@ -451,11 +443,11 @@ export default function WorkspacePage() {
                   value={draft.linkedinPost}
                   onChange={(event) => updateDraft("linkedinPost", event.target.value)}
                   disabled={workspaceLocked}
-                  className="min-h-56 w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-sm leading-6 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200 disabled:bg-slate-100"
+                  className="field-textarea min-h-56"
                   placeholder="Write the LinkedIn post here..."
                 />
-                <div className="mt-2 flex items-center justify-between gap-3 text-xs text-slate-500">
-                  <span>{errors.linkedinPost ? <span className="font-medium text-red-600">{errors.linkedinPost}</span> : "Use Save Progress to store your draft."}</span>
+                <div className="mt-2 flex items-center justify-between gap-3 text-[12px] text-[#86868b]">
+                  <span>{errors.linkedinPost ? <span className="font-medium text-[#d70015]">{errors.linkedinPost}</span> : "Use Save Progress to store your draft."}</span>
                   <span>{draft.linkedinPost.length} characters</span>
                 </div>
               </div>
@@ -469,12 +461,12 @@ export default function WorkspacePage() {
                 />
                 <Field label="Supporting B2B graphic Figma link" error={errors.marketingFigmaLink} hint="Upload a file or paste a Figma link.">
                   <div className="relative">
-                    <LinkIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <LinkIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
                     <input
                       value={draft.marketingFigmaLink}
                       onChange={(event) => updateDraft("marketingFigmaLink", event.target.value)}
                       disabled={workspaceLocked}
-                      className="field-input pl-9 disabled:bg-slate-100"
+                      className="field-input pl-10"
                       placeholder="https://figma.com/..."
                     />
                   </div>
@@ -513,26 +505,26 @@ function TaskCard({
   children: ReactNode;
 }) {
   return (
-    <article id={id} className="rounded-lg border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex gap-3">
-          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-950 text-sm font-semibold text-white">
+    <article id={id} className="card scroll-mt-6">
+      <div className="flex flex-col gap-3 border-b border-black/[0.06] px-6 py-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex gap-4">
+          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1d1d1f] text-[13px] font-semibold text-white">
             {number}
           </span>
           <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-semibold text-slate-950">{title}</h2>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h2 className="title-md">{title}</h2>
               {required ? (
-                <span className="rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
+                <span className="rounded-full bg-[#f5f5f7] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.04em] text-[#6e6e73]">
                   Required
                 </span>
               ) : null}
             </div>
-            <p className="mt-1 text-sm leading-6 text-slate-600">{objective}</p>
+            <p className="text-secondary-apple mt-1">{objective}</p>
           </div>
         </div>
       </div>
-      <div className="space-y-4 p-5">{children}</div>
+      <div className="space-y-5 p-6">{children}</div>
     </article>
   );
 }
