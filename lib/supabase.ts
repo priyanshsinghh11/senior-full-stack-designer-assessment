@@ -86,6 +86,81 @@ type Database = {
           },
         ];
       };
+      assessment_submissions: {
+        Row: {
+          id: string;
+          candidate_id: string;
+          assessment_session_id: string;
+          website_figma_link: string | null;
+          website_file_name: string | null;
+          website_explanation: string;
+          website_walkthrough_url: string;
+          healthcare_figma_link: string | null;
+          healthcare_file_name: string | null;
+          healthcare_explanation: string;
+          linkedin_post: string;
+          linkedin_graphic_file_name: string | null;
+          linkedin_graphic_figma_link: string | null;
+          submitted_payload: Record<string, unknown>;
+          submitted_at: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          candidate_id: string;
+          assessment_session_id: string;
+          website_figma_link?: string | null;
+          website_file_name?: string | null;
+          website_explanation: string;
+          website_walkthrough_url: string;
+          healthcare_figma_link?: string | null;
+          healthcare_file_name?: string | null;
+          healthcare_explanation: string;
+          linkedin_post: string;
+          linkedin_graphic_file_name?: string | null;
+          linkedin_graphic_figma_link?: string | null;
+          submitted_payload?: Record<string, unknown>;
+          submitted_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          candidate_id?: string;
+          assessment_session_id?: string;
+          website_figma_link?: string | null;
+          website_file_name?: string | null;
+          website_explanation?: string;
+          website_walkthrough_url?: string;
+          healthcare_figma_link?: string | null;
+          healthcare_file_name?: string | null;
+          healthcare_explanation?: string;
+          linkedin_post?: string;
+          linkedin_graphic_file_name?: string | null;
+          linkedin_graphic_figma_link?: string | null;
+          submitted_payload?: Record<string, unknown>;
+          submitted_at?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "assessment_submissions_candidate_id_fkey";
+            columns: ["candidate_id"];
+            isOneToOne: false;
+            referencedRelation: "candidates";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "assessment_submissions_assessment_session_id_fkey";
+            columns: ["assessment_session_id"];
+            isOneToOne: true;
+            referencedRelation: "assessment_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

@@ -71,6 +71,7 @@ export default function WorkspacePage() {
     return localStorage.getItem(submittedKey) === "true";
   });
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [isSubmittingAssessment, setIsSubmittingAssessment] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
   const [now, setNow] = useState(() => new Date());
 
@@ -215,11 +216,12 @@ export default function WorkspacePage() {
     setSubmitMessage("Progress saved.");
   }
 
-  function submitAssessment() {
+  async function submitAssessment() {
     if (isExpired) {
       setSubmitMessage("The assessment timer has expired. Submissions are locked.");
       return;
     }
+    if (isSubmittingAssessment) return;
 
     setSubmitMessage("");
     if (!validateSubmission()) {
@@ -227,12 +229,74 @@ export default function WorkspacePage() {
       return;
     }
 
-    localStorage.setItem(autosaveKey, JSON.stringify(draft));
-    localStorage.setItem(submittedKey, "true");
-    localStorage.setItem("assessmentSubmittedAt", new Date().toISOString());
-    setIsSubmitted(true);
-    setSubmitMessage("Assessment submitted successfully.");
-    setShowSubmitModal(true);
+    setIsSubmittingAssessment(true);
+
+    try {
+      const candidateId = localStorage.getItem("assessmentCandidateId");
+      const sessionId = localStorage.getItem("assessmentSessionId");
+
+      if (!candidateId || !sessionId) {
+        throw new Error("Candidate or assessment session was not found. Please start again.");
+      }
+
+      const submittedAt = new Date().toISOString();
+      const supabase = getSupabaseClient();
+
+      const { error: submissionError } = await supabase
+        .from("assessment_submissions")
+        .upsert(
+          {
+            candidate_id: candidateId,
+            assessment_session_id: sessionId,
+            website_figma_link: draft.websiteFigmaLink.trim() || null,
+            website_file_name: draft.websiteFileName || null,
+            website_explanation: draft.websiteExplanation.trim(),
+            website_walkthrough_url: draft.videoUrl.trim(),
+            healthcare_figma_link: draft.healthcareFigmaLink.trim() || null,
+            healthcare_file_name: draft.healthcareFileName || null,
+            healthcare_explanation: draft.healthcareExplanation.trim(),
+            linkedin_post: draft.linkedinPost.trim(),
+            linkedin_graphic_file_name: draft.marketingFileName || null,
+            linkedin_graphic_figma_link: draft.marketingFigmaLink.trim() || null,
+            submitted_payload: draft,
+            submitted_at: submittedAt,
+            updated_at: submittedAt,
+          },
+          { onConflict: "assessment_session_id" },
+        );
+
+      if (submissionError) {
+        throw new Error(submissionError.message);
+      }
+
+      const { error: sessionError } = await supabase
+        .from("assessment_sessions")
+        .update({
+          status: "submitted",
+          submitted_at: submittedAt,
+          updated_at: submittedAt,
+        })
+        .eq("id", sessionId);
+
+      if (sessionError) {
+        throw new Error(sessionError.message);
+      }
+
+      localStorage.setItem(autosaveKey, JSON.stringify(draft));
+      localStorage.setItem(submittedKey, "true");
+      localStorage.setItem("assessmentSubmittedAt", submittedAt);
+      setIsSubmitted(true);
+      setSubmitMessage("Assessment submitted successfully.");
+      setShowSubmitModal(true);
+    } catch (error) {
+      setSubmitMessage(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while submitting the assessment.",
+      );
+    } finally {
+      setIsSubmittingAssessment(false);
+    }
   }
 
   return (
@@ -267,11 +331,17 @@ export default function WorkspacePage() {
               <button
                 type="button"
                 onClick={submitAssessment}
-                disabled={workspaceLocked}
+                disabled={workspaceLocked || isSubmittingAssessment}
                 className="game-button"
               >
                 {workspaceLocked ? <LockKeyhole className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-                {isSubmitted ? "Submitted" : isExpired ? "Expired" : "Submit Assessment"}
+                {isSubmitted
+                  ? "Submitted"
+                  : isExpired
+                    ? "Expired"
+                    : isSubmittingAssessment
+                      ? "Submitting..."
+                      : "Submit Assessment"}
               </button>
             </div>
           </div>
