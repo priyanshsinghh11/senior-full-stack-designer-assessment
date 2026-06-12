@@ -2,22 +2,23 @@
 
 import { CheckCircle2, Clock3, FileText, LockKeyhole } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ProgressSteps } from "@/components/progress-steps";
 
 export default function SubmissionConfirmationPage() {
-  const [candidateName] = useState(() => {
-    if (typeof window === "undefined") return "Candidate";
-    return localStorage.getItem("assessmentCandidateName") || "Candidate";
-  });
-  const [submittedAt] = useState(() => {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem("assessmentSubmittedAt") || new Date().toISOString();
-  });
-  const [sessionId] = useState(() => {
-    if (typeof window === "undefined") return "";
-    return localStorage.getItem("assessmentSessionId") || "";
-  });
+  const [candidateName, setCandidateName] = useState("Candidate");
+  const [submittedAt, setSubmittedAt] = useState("");
+  const [sessionId, setSessionId] = useState("");
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setCandidateName(localStorage.getItem("assessmentCandidateName") || "Candidate");
+      setSubmittedAt(localStorage.getItem("assessmentSubmittedAt") || new Date().toISOString());
+      setSessionId(localStorage.getItem("assessmentSessionId") || "");
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const formattedSubmittedAt = useMemo(() => {
     if (!submittedAt) return "Not available";

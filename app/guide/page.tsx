@@ -25,21 +25,23 @@ const checklist = [
 
 export default function AssessmentGuidePage() {
   const router = useRouter();
-  const [candidateName] = useState(() => {
-    if (typeof window === "undefined") return "Candidate";
-    return localStorage.getItem("assessmentCandidateName") || "Candidate";
-  });
-  const [expiresAt, setExpiresAt] = useState<Date | null>(() => {
-    if (typeof window === "undefined") return null;
-    const storedExpiry = localStorage.getItem("assessmentExpiresAt");
-    return storedExpiry ? new Date(storedExpiry) : null;
-  });
+  const [candidateName, setCandidateName] = useState("Candidate");
+  const [expiresAt, setExpiresAt] = useState<Date | null>(null);
   const [now, setNow] = useState(() => new Date());
   const [isStarting, setIsStarting] = useState(false);
   const [startError, setStartError] = useState("");
 
   useEffect(() => {
     let isActive = true;
+    const hydrationTimer = window.setTimeout(() => {
+      if (!isActive) return;
+      setCandidateName(localStorage.getItem("assessmentCandidateName") || "Candidate");
+
+      const storedExpiry = localStorage.getItem("assessmentExpiresAt");
+      if (storedExpiry) {
+        setExpiresAt(new Date(storedExpiry));
+      }
+    }, 0);
 
     async function loadSessionTimer() {
       const sessionId = localStorage.getItem("assessmentSessionId");
@@ -61,6 +63,7 @@ export default function AssessmentGuidePage() {
 
     return () => {
       isActive = false;
+      window.clearTimeout(hydrationTimer);
     };
   }, []);
 

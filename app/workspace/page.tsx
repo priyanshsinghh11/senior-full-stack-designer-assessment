@@ -50,26 +50,12 @@ const acceptedVideoHosts = ["loom.com", "youtube.com", "youtu.be", "vimeo.com"];
 
 export default function WorkspacePage() {
   const router = useRouter();
-  const [candidateName] = useState(() => {
-    if (typeof window === "undefined") return "Candidate";
-    return localStorage.getItem("assessmentCandidateName") || "Candidate";
-  });
-  const [expiresAt, setExpiresAt] = useState<Date | null>(() => {
-    if (typeof window === "undefined") return null;
-    const storedExpiry = localStorage.getItem("assessmentExpiresAt");
-    return storedExpiry ? new Date(storedExpiry) : null;
-  });
-  const [draft, setDraft] = useState<WorkspaceDraft>(() => {
-    if (typeof window === "undefined") return emptyDraft;
-    const storedDraft = localStorage.getItem(autosaveKey);
-    return storedDraft ? { ...emptyDraft, ...JSON.parse(storedDraft) } : emptyDraft;
-  });
+  const [candidateName, setCandidateName] = useState("Candidate");
+  const [expiresAt, setExpiresAt] = useState<Date | null>(null);
+  const [draft, setDraft] = useState<WorkspaceDraft>(emptyDraft);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
-  const [isSubmitted, setIsSubmitted] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem(submittedKey) === "true";
-  });
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [isSubmittingAssessment, setIsSubmittingAssessment] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
@@ -77,6 +63,25 @@ export default function WorkspacePage() {
 
   useEffect(() => {
     let isActive = true;
+    const hydrationTimer = window.setTimeout(() => {
+      if (!isActive) return;
+      setCandidateName(localStorage.getItem("assessmentCandidateName") || "Candidate");
+      setIsSubmitted(localStorage.getItem(submittedKey) === "true");
+
+      const storedExpiry = localStorage.getItem("assessmentExpiresAt");
+      if (storedExpiry) {
+        setExpiresAt(new Date(storedExpiry));
+      }
+
+      const storedDraft = localStorage.getItem(autosaveKey);
+      if (storedDraft) {
+        try {
+          setDraft({ ...emptyDraft, ...JSON.parse(storedDraft) });
+        } catch {
+          setDraft(emptyDraft);
+        }
+      }
+    }, 0);
 
     async function loadSessionTimer() {
       const sessionId = localStorage.getItem("assessmentSessionId");
@@ -104,6 +109,7 @@ export default function WorkspacePage() {
 
     return () => {
       isActive = false;
+      window.clearTimeout(hydrationTimer);
     };
   }, []);
 
