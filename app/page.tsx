@@ -163,36 +163,30 @@ export default function CandidateInformationPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f5f7fb] px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+    <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
         <ProgressSteps currentStep="profile" />
 
-        <header className="rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm">
-          <div>
-            <p className="text-sm font-medium text-slate-500">Candidate information</p>
-            <h1 className="mt-1 text-2xl font-semibold tracking-normal text-slate-950">
-              Tell us about yourself
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Complete your profile details before opening the assessment guide.
-            </p>
-          </div>
+        <header className="card px-6 py-6">
+          <p className="eyebrow">Candidate information</p>
+          <h1 className="title-lg mt-2">Tell us about yourself</h1>
+          <p className="text-secondary-apple mt-2">
+            Complete your profile details before opening the assessment guide.
+          </p>
         </header>
 
-        <section className="rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 px-5 py-4">
-            <h2 className="text-lg font-semibold text-slate-950">
-              User Information
-            </h2>
-            <p className="mt-1 text-sm text-slate-500">
+        <section className="card">
+          <div className="card-header">
+            <h2 className="title-md">User Information</h2>
+            <p className="text-secondary-apple mt-1">
               You can edit these details before opening the guide.
             </p>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 p-5">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 p-6">
               <div>
-                <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800">
-                  <UserRound className="h-4 w-4 text-slate-500" />
+                <div className="mb-4 flex items-center gap-2 text-[15px] font-semibold text-[#1d1d1f]">
+                  <UserRound className="h-4 w-4 text-[#86868b]" />
                   Personal information
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -216,10 +210,10 @@ export default function CandidateInformationPage() {
                 <div className="mt-4">
                   <Field label="Email address" error={errors.email?.message} required>
                     <div className="relative">
-                      <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
                       <input
                         {...register("email")}
-                        className="field-input pl-9"
+                        className="field-input pl-10"
                         placeholder="name@example.com"
                         autoComplete="email"
                       />
@@ -229,16 +223,16 @@ export default function CandidateInformationPage() {
               </div>
 
               <div>
-                <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-800">
-                  <BriefcaseBusiness className="h-4 w-4 text-slate-500" />
+                <div className="mb-4 flex items-center gap-2 text-[15px] font-semibold text-[#1d1d1f]">
+                  <BriefcaseBusiness className="h-4 w-4 text-[#86868b]" />
                   Professional information
                 </div>
                 <div className="grid gap-4">
                   <div className="grid gap-4 lg:grid-cols-2">
                     <Field label="Resume upload" hint="Optional: PDF, DOC, or DOCX">
-                      <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-600 transition hover:border-slate-400 hover:bg-slate-100">
+                      <label className="file-drop file-drop-active">
                         <span className="truncate">{resumeFileLabel}</span>
-                        <Upload className="h-4 w-4 shrink-0 text-slate-500" />
+                        <Upload className="h-4 w-4 shrink-0 text-[#86868b]" />
                         <input
                           type="file"
                           accept=".pdf,.doc,.docx"
@@ -254,10 +248,10 @@ export default function CandidateInformationPage() {
                       error={errors.resumeLink?.message}
                     >
                       <div className="relative">
-                        <LinkIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                        <LinkIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
                         <input
                           {...register("resumeLink")}
-                          className="field-input pl-9"
+                          className="field-input pl-10"
                           placeholder="https://..."
                         />
                       </div>

@@ -2,7 +2,16 @@
 
 :root {
   --background: #f5f5f7;
+  --surface: #ffffff;
   --foreground: #1d1d1f;
+  --secondary: #6e6e73;
+  --tertiary: #86868b;
+  --separator: #d2d2d7;
+  --separator-soft: rgba(0, 0, 0, 0.06);
+  --fill: #f5f5f7;
+  --fill-secondary: #e8e8ed;
+  --accent: #1d1d1f;
+  --danger: #d70015;
 }
 
 @theme inline {
@@ -10,30 +19,111 @@
   --color-foreground: var(--foreground);
 }
 
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
 body {
   min-height: 100vh;
   background: var(--background);
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
-    "Helvetica Neue", "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "SF Pro Display", "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
+  font-feature-settings: "kern" 1, "liga" 1;
+  letter-spacing: -0.01em;
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.022em;
+}
+
+::selection {
+  background: rgba(0, 0, 0, 0.1);
 }
 
 button,
 input,
 textarea {
   font: inherit;
+  letter-spacing: inherit;
 }
 
 @layer components {
-  .field-input {
-    @apply min-h-11 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200;
+  /* Surfaces */
+  .card {
+    @apply rounded-2xl border border-black/[0.06] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.04)];
   }
 
+  .card-header {
+    @apply border-b border-black/[0.06] px-6 py-5;
+  }
+
+  .card-body {
+    @apply p-6;
+  }
+
+  /* Neutral callout — replaces all colored tinted boxes */
+  .note {
+    @apply rounded-xl bg-[#f5f5f7] p-5;
+  }
+
+  /* Typography helpers */
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-[#86868b];
+  }
+
+  .title-lg {
+    @apply text-[28px] font-semibold leading-tight tracking-[-0.022em] text-[#1d1d1f];
+  }
+
+  .title-md {
+    @apply text-[19px] font-semibold tracking-[-0.02em] text-[#1d1d1f];
+  }
+
+  .text-secondary-apple {
+    @apply text-sm leading-6 text-[#6e6e73];
+  }
+
+  /* Form controls */
+  .field-label {
+    @apply mb-2 block text-[13px] font-medium text-[#1d1d1f];
+  }
+
+  .field-input {
+    @apply min-h-11 w-full rounded-xl border border-[#d2d2d7] bg-white px-3.5 py-2.5 text-[15px] text-[#1d1d1f] outline-none transition-all duration-200 placeholder:text-[#86868b] hover:border-[#a1a1a6] focus:border-[#1d1d1f] focus:ring-4 focus:ring-black/[0.06] disabled:bg-[#f5f5f7] disabled:text-[#86868b];
+  }
+
+  .field-textarea {
+    @apply w-full resize-y rounded-xl border border-[#d2d2d7] bg-white px-3.5 py-2.5 text-[15px] leading-6 text-[#1d1d1f] outline-none transition-all duration-200 placeholder:text-[#86868b] hover:border-[#a1a1a6] focus:border-[#1d1d1f] focus:ring-4 focus:ring-black/[0.06] disabled:bg-[#f5f5f7] disabled:text-[#86868b];
+  }
+
+  .field-hint {
+    @apply mt-1.5 block text-[12px] text-[#86868b];
+  }
+
+  .field-error {
+    @apply mt-1.5 block text-[12px] font-medium text-[#d70015];
+  }
+
+  /* Buttons — Apple pill style */
   .game-button {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-slate-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#1d1d1f] px-6 py-2.5 text-[15px] font-medium text-white transition-all duration-200 hover:bg-black hover:shadow-[0_4px_14px_rgba(0,0,0,0.2)] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[#d2d2d7] disabled:shadow-none;
   }
 
   .game-button-secondary {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:text-slate-400;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#d2d2d7] bg-white px-5 py-2.5 text-[15px] font-medium text-[#1d1d1f] transition-all duration-200 hover:border-[#a1a1a6] hover:bg-[#f5f5f7] active:scale-[0.98] disabled:cursor-not-allowed disabled:text-[#86868b];
+  }
+
+  /* File drop zone */
+  .file-drop {
+    @apply flex min-h-11 items-center justify-between gap-3 rounded-xl border border-dashed border-[#d2d2d7] bg-[#f5f5f7] px-3.5 py-2.5 text-[14px] text-[#6e6e73] transition-all duration-200;
+  }
+
+  .file-drop-active {
+    @apply cursor-pointer hover:border-[#86868b] hover:bg-[#e8e8ed];
   }
 }

@@ -13,10 +13,7 @@ export function ProgressSteps({ currentStep }: { currentStep: StepId }) {
   const currentIndex = steps.findIndex((step) => step.id === currentStep);
 
   return (
-    <nav
-      aria-label="Assessment progress"
-      className="rounded-lg border border-slate-200 bg-white px-4 py-4 shadow-sm"
-    >
+    <nav aria-label="Assessment progress" className="card px-5 py-5">
       <ol className="grid grid-cols-4">
         {steps.map((step, index) => {
           const isComplete = index < currentIndex;
@@ -25,38 +22,38 @@ export function ProgressSteps({ currentStep }: { currentStep: StepId }) {
           return (
             <li
               key={step.id}
-              className="relative flex flex-col items-center gap-2 text-center"
+              className="relative flex flex-col items-center gap-2.5 text-center"
             >
               {index > 0 ? (
                 <span
-                  className={`absolute left-0 right-1/2 top-4 h-px ${
-                    isComplete || isCurrent ? "bg-slate-950" : "bg-slate-200"
+                  className={`absolute left-0 right-1/2 top-[15px] h-px transition-colors duration-300 ${
+                    isComplete || isCurrent ? "bg-[#1d1d1f]" : "bg-[#d2d2d7]"
                   }`}
                 />
               ) : null}
               {index < steps.length - 1 ? (
                 <span
-                  className={`absolute left-1/2 right-0 top-4 h-px ${
-                    isComplete ? "bg-slate-950" : "bg-slate-200"
+                  className={`absolute left-1/2 right-0 top-[15px] h-px transition-colors duration-300 ${
+                    isComplete ? "bg-[#1d1d1f]" : "bg-[#d2d2d7]"
                   }`}
                 />
               ) : null}
 
               <span
-                className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${
+                className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-semibold transition-all duration-300 ${
                   isComplete
-                    ? "bg-emerald-600 text-white"
+                    ? "bg-[#1d1d1f] text-white"
                     : isCurrent
-                      ? "bg-slate-950 text-white"
-                      : "bg-slate-100 text-slate-500 ring-1 ring-slate-200"
+                      ? "bg-[#1d1d1f] text-white shadow-[0_0_0_4px_rgba(0,0,0,0.06)]"
+                      : "bg-[#f5f5f7] text-[#86868b] ring-1 ring-[#d2d2d7]"
                 }`}
               >
-                {isComplete ? <Check className="h-4 w-4" /> : index + 1}
+                {isComplete ? <Check className="h-4 w-4" strokeWidth={2.5} /> : index + 1}
               </span>
 
               <span
-                className={`text-xs font-medium sm:text-sm ${
-                  isCurrent ? "text-slate-950" : "text-slate-500"
+                className={`text-[12px] font-medium sm:text-[13px] ${
+                  isCurrent ? "text-[#1d1d1f]" : "text-[#86868b]"
                 }`}
               >
                 {step.label}
