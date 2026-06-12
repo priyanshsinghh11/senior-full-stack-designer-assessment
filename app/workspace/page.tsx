@@ -25,7 +25,6 @@ type WorkspaceDraft = {
   healthcareFileName: string;
   healthcareExplanation: string;
   linkedinPost: string;
-  linkedinAngle: string;
   marketingFileName: string;
   marketingFigmaLink: string;
   videoUrl: string;
@@ -39,7 +38,6 @@ const emptyDraft: WorkspaceDraft = {
   healthcareFileName: "",
   healthcareExplanation: "",
   linkedinPost: "",
-  linkedinAngle: "",
   marketingFileName: "",
   marketingFigmaLink: "",
   videoUrl: "",
@@ -142,7 +140,6 @@ export default function WorkspacePage() {
     if ((draft.healthcareFigmaLink || draft.healthcareFileName) && draft.healthcareExplanation) completed += 1;
     if (
       draft.linkedinPost.trim() &&
-      draft.linkedinAngle.trim() &&
       (draft.marketingFileName || draft.marketingFigmaLink)
     ) {
       completed += 1;
@@ -203,10 +200,7 @@ export default function WorkspacePage() {
     }
     if (!draft.marketingFileName && !draft.marketingFigmaLink) {
       nextErrors.marketingFigmaLink =
-        "Upload the supporting LinkedIn graphic or paste a Figma link.";
-    }
-    if (!draft.linkedinAngle.trim()) {
-      nextErrors.linkedinAngle = "Add a note explaining the angle you chose.";
+        "Upload the supporting B2B graphic or paste a Figma link.";
     }
 
     setErrors(nextErrors);
@@ -321,7 +315,7 @@ export default function WorkspacePage() {
               {[
                 ["task-1", "Website Redesign"],
                 ["task-2", "Product UI Flow"],
-                ["task-3", "LinkedIn Asset"],
+                ["task-3", "LinkedIn B2B Asset"],
               ].map(([href, label], index) => (
                 <a
                   key={href}
@@ -428,8 +422,8 @@ export default function WorkspacePage() {
             <TaskCard
               id="task-3"
               number="3"
-              title="LinkedIn Asset"
-              objective="Create one LinkedIn post plus a supporting graphic from the AI Reality Check report, with a note on the angle chosen."
+              title="LinkedIn B2B Asset"
+              objective="Create a LinkedIn post and supporting B2B graphic from the AI Reality Check report."
               required
             >
               <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-4">
@@ -438,8 +432,7 @@ export default function WorkspacePage() {
                 </p>
                 <ul className="mt-3 grid gap-2 text-sm leading-6 text-indigo-950/80 md:grid-cols-2">
                   <li>LinkedIn post copy written in the editor below.</li>
-                  <li>Supporting graphic uploaded as an image/PDF or linked from Figma.</li>
-                  <li>Short note explaining the chosen angle from the AI Reality Check report.</li>
+                  <li>Supporting B2B graphic uploaded as an image/PDF or linked from Figma.</li>
                 </ul>
               </div>
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
@@ -468,13 +461,13 @@ export default function WorkspacePage() {
               </div>
               <div className="grid gap-4 lg:grid-cols-2">
                 <FileInput
-                  label="Supporting graphic upload"
+                  label="Supporting B2B graphic upload"
                   fileName={draft.marketingFileName}
                   onChange={(event) => handleFile("marketingFileName", event)}
                   disabled={workspaceLocked}
                   error={errors.marketingFigmaLink}
                 />
-                <Field label="Supporting graphic Figma link" error={errors.marketingFigmaLink} hint="Upload a file or paste a Figma link.">
+                <Field label="Supporting B2B graphic Figma link" error={errors.marketingFigmaLink} hint="Upload a file or paste a Figma link.">
                   <div className="relative">
                     <LinkIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
@@ -487,15 +480,6 @@ export default function WorkspacePage() {
                   </div>
                 </Field>
               </div>
-              <Field label="Angle chosen" error={errors.linkedinAngle}>
-                <textarea
-                  value={draft.linkedinAngle}
-                  onChange={(event) => updateDraft("linkedinAngle", event.target.value)}
-                  disabled={workspaceLocked}
-                  className="min-h-28 w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-sm leading-6 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200 disabled:bg-slate-100"
-                  placeholder="Explain the angle you chose from the AI Reality Check report and why it works for LinkedIn."
-                />
-              </Field>
             </TaskCard>
           </section>
         </div>
