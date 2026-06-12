@@ -372,7 +372,7 @@ export default function WorkspacePage() {
                   value={draft.videoUrl}
                   onChange={(event) => updateDraft("videoUrl", event.target.value)}
                   disabled={workspaceLocked}
-                  className="field-input disabled:bg-slate-100"
+                  className="field-input"
                   placeholder="https://www.loom.com/share/..."
                 />
               </Field>
@@ -557,12 +557,12 @@ function SubmissionFields({
       <div className="grid gap-4 lg:grid-cols-2">
         <Field label={figmaLabel} error={figmaError}>
           <div className="relative">
-            <LinkIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <LinkIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
             <input
               value={figmaValue}
               onChange={(event) => onFigmaChange(event.target.value)}
               disabled={disabled}
-              className="field-input pl-9 disabled:bg-slate-100"
+              className="field-input pl-10"
               placeholder="https://figma.com/..."
             />
           </div>
@@ -579,7 +579,7 @@ function SubmissionFields({
           value={explanationValue}
           onChange={(event) => onExplanationChange(event.target.value)}
           disabled={disabled}
-          className="min-h-32 w-full resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-sm leading-6 text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-slate-500 focus:ring-2 focus:ring-slate-200 disabled:bg-slate-100"
+          className="field-textarea min-h-32"
           placeholder="Explain your design decisions, interactions, and responsive behavior."
         />
       </Field>
@@ -602,9 +602,9 @@ function FileInput({
 }) {
   return (
     <Field label={label} hint="PDF, PNG, JPG" error={error}>
-      <label className={`flex min-h-11 items-center justify-between gap-3 rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-600 transition ${disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer hover:border-slate-400 hover:bg-slate-100"}`}>
+      <label className={`file-drop ${disabled ? "cursor-not-allowed opacity-60" : "file-drop-active"}`}>
         <span className="truncate">{fileName || "Upload PDF, PNG, or JPG"}</span>
-        <FileUp className="h-4 w-4 shrink-0 text-slate-500" />
+        <FileUp className="h-4 w-4 shrink-0 text-[#86868b]" />
         <input
           type="file"
           accept={acceptedDesignFiles}
@@ -630,10 +630,10 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-slate-700">{label}</span>
+      <span className="field-label">{label}</span>
       {children}
-      {hint && !error ? <span className="mt-1 block text-xs text-slate-500">{hint}</span> : null}
-      {error ? <span className="mt-1 block text-xs font-medium text-red-600">{error}</span> : null}
+      {hint && !error ? <span className="field-hint">{hint}</span> : null}
+      {error ? <span className="field-error">{error}</span> : null}
     </label>
   );
 }
@@ -655,7 +655,7 @@ function ToolbarButton({
       onClick={onClick}
       disabled={disabled}
       title={label}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+      className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.08)] transition-all duration-200 hover:bg-[#e8e8ed] active:scale-95 disabled:cursor-not-allowed disabled:text-[#86868b]"
     >
       {children}
     </button>
@@ -664,14 +664,12 @@ function ToolbarButton({
 
 function StatusTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex min-h-16 items-center justify-between gap-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+    <div className="flex min-h-16 items-center justify-between gap-4 rounded-xl bg-[#f5f5f7] px-4 py-3">
       <div>
-        <p className="text-xs font-medium uppercase tracking-normal text-slate-500">
-          {label}
-        </p>
-        <p className="mt-1 text-sm font-semibold text-slate-950">{value}</p>
+        <p className="eyebrow">{label}</p>
+        <p className="mt-1 text-[15px] font-semibold text-[#1d1d1f]">{value}</p>
       </div>
-      <CheckCircle2 className="h-4 w-4 text-slate-400" />
+      <CheckCircle2 className="h-4 w-4 text-[#86868b]" />
     </div>
   );
 }
