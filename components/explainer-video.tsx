@@ -12,12 +12,21 @@ export function ExplainerVideo({
   const embedUrl = getEmbeddableVideoUrl(url || "");
 
   return (
-    <div className="max-w-md overflow-hidden rounded-xl border border-black/[0.06]">
-      <div className="flex items-center gap-2 border-b border-black/[0.06] bg-[#f5f5f7] px-4 py-2.5 text-[13px] font-semibold text-[#1d1d1f]">
-        <MonitorPlay className="h-4 w-4 text-[#86868b]" />
+    <div
+      className="max-w-md overflow-hidden border"
+      style={{ borderColor: "var(--line-light)", borderRadius: "var(--r-2)" }}
+    >
+      <div
+        className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-semibold text-[var(--ink-900)]"
+        style={{
+          borderBottom: "1px solid var(--line-light)",
+          background: "var(--sky-50)",
+        }}
+      >
+        <MonitorPlay className="h-4 w-4 text-[var(--sky-500)]" />
         {label}
       </div>
-      <div className="aspect-video bg-[#1d1d1f]">
+      <div className="aspect-video bg-[var(--ink-900)]">
         {embedUrl ? (
           <iframe
             src={embedUrl}
@@ -28,9 +37,11 @@ export function ExplainerVideo({
           />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-2 px-5 text-center text-white">
-            <MonitorPlay className="h-7 w-7 text-white/60" />
-            <p className="text-[13px] font-medium">Explainer coming soon</p>
-            <p className="text-[12px] leading-5 text-white/55">
+            <MonitorPlay className="h-7 w-7 text-[var(--sky-400)]" />
+            <p className="text-[13px] font-medium text-[var(--sky-100)]">
+              Explainer coming soon
+            </p>
+            <p className="text-[12px] leading-5 text-[var(--sky-100)]/70">
               Prefer watching? A short walkthrough plays here.
             </p>
           </div>

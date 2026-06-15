@@ -30,14 +30,15 @@ export default function SubmissionConfirmationPage() {
   }, [submittedAt]);
 
   return (
-    <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
+    <main className="min-h-screen px-4 py-8 sm:px-6 lg:pl-[310px] lg:pr-8">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
         <ProgressSteps currentStep="submit" />
 
         <section className="card">
-          <div className="card-header py-6">
+          <div className="card-header relative py-6">
+            <span className="deco-squares absolute right-6 top-6" aria-hidden />
             <div className="flex items-center gap-4">
-              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#1d1d1f] text-white">
+              <span className="flex h-11 w-11 items-center justify-center bg-[var(--ink-900)] text-[var(--sky-400)]">
                 <CheckCircle2 className="h-5 w-5" />
               </span>
               <div>
@@ -66,13 +67,13 @@ export default function SubmissionConfirmationPage() {
             {sessionId ? (
               <div className="note px-4 py-3">
                 <p className="eyebrow">Submission ID</p>
-                <p className="mt-1 break-all text-sm font-medium text-[#1d1d1f]">
+                <p className="mono mt-1 break-all text-sm text-[var(--ink-900)]">
                   {sessionId}
                 </p>
               </div>
             ) : null}
 
-            <div className="note px-4 py-3 text-sm leading-6 text-[#6e6e73]">
+            <div className="note px-4 py-3 text-sm leading-6 text-[var(--ink-muted)]">
               No further edits are allowed after submission.
             </div>
 
@@ -96,12 +97,12 @@ function InfoCard({
   value: string;
 }) {
   return (
-    <div className="rounded-xl bg-[#f5f5f7] p-4">
-      <div className="flex items-center gap-2 text-[#86868b]">
+    <div className="rounded-[10px] border border-[var(--line-light)] bg-[var(--sky-50)] p-4">
+      <div className="flex items-center gap-2 text-[var(--sky-500)]">
         {icon}
         <span className="eyebrow">{label}</span>
       </div>
-      <p className="mt-2 text-[15px] font-semibold text-[#1d1d1f]">{value}</p>
+      <p className="mt-2 text-[15px] font-semibold text-[var(--ink-900)]">{value}</p>
     </div>
   );
 }

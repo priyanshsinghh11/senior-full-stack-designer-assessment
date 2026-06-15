@@ -1,8 +1,8 @@
 "use client";
 
 import { Clock3, LockKeyhole } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import { getSupabaseClient } from "@/lib/supabase";
 
 export function TopBar() {
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
@@ -24,13 +24,15 @@ export function TopBar() {
       const sessionId = localStorage.getItem("assessmentSessionId");
       if (!sessionId) return;
 
-      const { data, error } = await getSupabaseClient()
-        .from("assessment_sessions")
-        .select("expires_at")
-        .eq("id", sessionId)
-        .single();
+      const response = await fetch(
+        `/api/assessment-sessions?id=${encodeURIComponent(sessionId)}`,
+      );
 
-      if (!isActive || error || !data?.expires_at) return;
+      if (!isActive || !response.ok) return;
+
+      const data = (await response.json()) as { expires_at?: string | null };
+
+      if (!data.expires_at) return;
 
       localStorage.setItem("assessmentExpiresAt", data.expires_at);
       setExpiresAt(new Date(data.expires_at));
@@ -67,19 +69,34 @@ export function TopBar() {
   }, [expiresAt, now]);
 
   return (
-    <div className="sticky top-0 z-40 border-b border-black/[0.06] bg-white/80 backdrop-blur-xl">
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1d1d1f] text-[13px] font-bold text-white">
-            A
-          </span>
-          <span className="text-[15px] font-semibold tracking-[-0.01em] text-[#1d1d1f]">
-            Ajaia Assessment
+    <div
+      className="sticky top-0 z-40 border-b"
+      style={{
+        height: "72px",
+        background: "rgba(0, 13, 51, 0.6)",
+        borderColor: "var(--line-dark)",
+        backdropFilter: "blur(10px)",
+        WebkitBackdropFilter: "blur(10px)",
+      }}
+    >
+      <div className="mx-auto flex h-full w-full max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-3">
+          <Image
+            src="/ajaia-logo-white.png"
+            alt="Ajaia"
+            width={512}
+            height={123}
+            priority
+            className="h-[26px] w-auto"
+          />
+          <span className="hidden h-5 w-px bg-white/20 sm:block" aria-hidden />
+          <span className="mt-0.5 hidden text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--sky-400)] sm:inline">
+            Assessment
           </span>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <span className="hidden text-[12px] font-medium text-[#86868b] sm:inline">
+        <div className="flex items-center gap-3">
+          <span className="hidden text-[12px] font-medium text-[var(--sky-100)] sm:inline">
             {isExpired
               ? "Time expired"
               : hasStarted
@@ -88,13 +105,19 @@ export function TopBar() {
           </span>
           <div
             suppressHydrationWarning
-            className={`flex min-h-9 items-center gap-2 rounded-xl px-4 text-[15px] font-semibold tabular-nums transition-colors ${
-              isExpired
-                ? "bg-[#fff0f0] text-[#d70015]"
+            className="mono flex min-h-9 items-center gap-2 px-4 text-[15px] font-medium tabular-nums"
+            style={{
+              borderRadius: "var(--r-0)",
+              border: "1px solid var(--line-dark)",
+              background: isExpired
+                ? "rgba(192, 52, 29, 0.18)"
+                : "rgba(255, 255, 255, 0.05)",
+              color: isExpired
+                ? "#ffb4a6"
                 : hasStarted
-                  ? "bg-[#f5f5f7] text-[#1d1d1f]"
-                  : "bg-[#f5f5f7] text-[#86868b]"
-            }`}
+                  ? "var(--sky-400)"
+                  : "var(--sky-100)",
+            }}
           >
             {isExpired ? (
               <LockKeyhole className="h-4 w-4" />

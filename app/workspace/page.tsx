@@ -1,7 +1,10 @@
-"use client";
+﻿"use client";
 
 import {
+  Check,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   FileUp,
   Italic,
   LinkIcon,
@@ -15,7 +18,6 @@ import { ChangeEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import { ExplainerVideo } from "@/components/explainer-video";
 import { ProgressSteps } from "@/components/progress-steps";
 import { TopBar } from "@/components/top-bar";
-import { getSupabaseClient } from "@/lib/supabase";
 
 const taskVideos = {
   website: process.env.NEXT_PUBLIC_TASK1_VIDEO_URL || "",
@@ -64,7 +66,7 @@ export default function WorkspacePage() {
   const [isSubmittingAssessment, setIsSubmittingAssessment] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
   const [now, setNow] = useState(() => new Date());
-
+  const [activeTab, setActiveTab] = useState(0);
   useEffect(() => {
     let isActive = true;
     const hydrationTimer = window.setTimeout(() => {
@@ -82,13 +84,16 @@ export default function WorkspacePage() {
       const sessionId = localStorage.getItem("assessmentSessionId");
       if (!sessionId) return;
 
-      const { data, error } = await getSupabaseClient()
-        .from("assessment_sessions")
-        .select("started_at, expires_at, status")
-        .eq("id", sessionId)
-        .single();
+      const response = await fetch(
+        `/api/assessment-sessions?id=${encodeURIComponent(sessionId)}`,
+      );
 
-      if (!isActive || error || !data) return;
+      if (!isActive || !response.ok) return;
+
+      const data = (await response.json()) as {
+        started_at?: string | null;
+        expires_at?: string | null;
+      };
 
       if (data.started_at) {
         localStorage.setItem("assessmentStartedAt", data.started_at);
@@ -138,6 +143,46 @@ export default function WorkspacePage() {
     }
     return completed;
   }, [draft]);
+
+  const task1Done = Boolean(
+    (draft.websiteFigmaLink || draft.websiteFileName) &&
+      draft.websiteExplanation &&
+      draft.videoUrl,
+  );
+  const task2Done = Boolean(
+    (draft.healthcareFigmaLink || draft.healthcareFileName) &&
+      draft.healthcareExplanation,
+  );
+  const task3Done = Boolean(
+    draft.linkedinPost.trim() &&
+      (draft.marketingFileName || draft.marketingFigmaLink),
+  );
+  const tabs = [
+    {
+      n: "1",
+      label: "Website Redesign",
+      done: task1Done,
+      summary:
+        "Redesign an Ajaia page with stronger hierarchy, conversion, responsiveness, and motion.",
+      deliverables: "Figma/file, explanation, walkthrough",
+    },
+    {
+      n: "2",
+      label: "Product UI Flow",
+      done: task2Done,
+      summary:
+        "Design a realistic HIPAA-ready healthcare translation flow with key screens and states.",
+      deliverables: "Figma/file, journey explanation",
+    },
+    {
+      n: "3",
+      label: "LinkedIn Asset",
+      done: task3Done,
+      summary:
+        "Write a LinkedIn post and create a supporting B2B graphic from the AI Reality Check report.",
+      deliverables: "Post copy, graphic file/link",
+    },
+  ];
 
   function updateDraft(field: keyof WorkspaceDraft, value: string) {
     if (workspaceLocked) return;
@@ -209,6 +254,9 @@ export default function WorkspacePage() {
     setSubmitMessage("");
     if (!validateSubmission()) {
       setSubmitMessage("Complete the required sections before submitting.");
+      if (!task1Done) setActiveTab(0);
+      else if (!task2Done) setActiveTab(1);
+      else if (!task3Done) setActiveTab(2);
       return;
     }
 
@@ -222,51 +270,23 @@ export default function WorkspacePage() {
         throw new Error("Candidate or assessment session was not found. Please start again.");
       }
 
-      const submittedAt = new Date().toISOString();
-      const supabase = getSupabaseClient();
+      const response = await fetch("/api/assessment-submissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ candidateId, sessionId, draft }),
+      });
 
-      const { error: submissionError } = await supabase
-        .from("assessment_submissions")
-        .upsert(
-          {
-            candidate_id: candidateId,
-            assessment_session_id: sessionId,
-            website_figma_link: draft.websiteFigmaLink.trim() || null,
-            website_file_name: draft.websiteFileName || null,
-            website_explanation: draft.websiteExplanation.trim(),
-            website_walkthrough_url: draft.videoUrl.trim(),
-            healthcare_figma_link: draft.healthcareFigmaLink.trim() || null,
-            healthcare_file_name: draft.healthcareFileName || null,
-            healthcare_explanation: draft.healthcareExplanation.trim(),
-            linkedin_post: draft.linkedinPost.trim(),
-            linkedin_graphic_file_name: draft.marketingFileName || null,
-            linkedin_graphic_figma_link: draft.marketingFigmaLink.trim() || null,
-            submitted_payload: draft,
-            submitted_at: submittedAt,
-            updated_at: submittedAt,
-          },
-          { onConflict: "assessment_session_id" },
-        );
+      const submission = (await response.json()) as {
+        submitted_at?: string;
+        error?: string;
+      };
 
-      if (submissionError) {
-        throw new Error(submissionError.message);
-      }
-
-      const { error: sessionError } = await supabase
-        .from("assessment_sessions")
-        .update({
-          status: "submitted",
-          submitted_at: submittedAt,
-          updated_at: submittedAt,
-        })
-        .eq("id", sessionId);
-
-      if (sessionError) {
-        throw new Error(sessionError.message);
+      if (!response.ok || !submission.submitted_at) {
+        throw new Error(submission.error || "Assessment could not be submitted.");
       }
 
       localStorage.setItem(submittedKey, "true");
-      localStorage.setItem("assessmentSubmittedAt", submittedAt);
+      localStorage.setItem("assessmentSubmittedAt", submission.submitted_at);
       setIsSubmitted(true);
       setSubmitMessage("Assessment submitted successfully.");
       setShowSubmitModal(true);
@@ -284,289 +304,358 @@ export default function WorkspacePage() {
   return (
     <>
       <TopBar />
-      <main className="px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
-        <ProgressSteps currentStep="assessment" />
+      <main className="px-4 py-8 sm:px-6 lg:pl-[310px] lg:pr-8">
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
+          <ProgressSteps currentStep="assessment" />
 
-        <header className="card">
-          <div className="flex flex-col gap-4 border-b border-black/[0.06] px-6 py-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="eyebrow">Assessment workspace</p>
-              <h1 className="title-lg mt-2">
-                Senior Full Stack Designer Assessment
-              </h1>
-              <p className="text-secondary-apple mt-2">{candidateName}</p>
+          <header className="card">
+            <div className="flex flex-col gap-4 border-b border-[var(--line-light)] px-6 py-6 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="eyebrow">Assessment workspace</p>
+                <h1 className="title-lg mt-2">
+                  Senior Full Stack Designer Assessment
+                </h1>
+                <p className="text-secondary-apple mt-2">{candidateName}</p>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <button
+                  type="button"
+                  onClick={submitAssessment}
+                  disabled={workspaceLocked || isSubmittingAssessment}
+                  suppressHydrationWarning
+                  className="game-button"
+                >
+                  {workspaceLocked ? <LockKeyhole className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+                  {isSubmitted
+                    ? "Submitted"
+                    : isExpired
+                      ? "Expired"
+                      : isSubmittingAssessment
+                        ? "Submitting..."
+                        : "Submit Assessment"}
+                </button>
+              </div>
             </div>
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <button
-                type="button"
-                onClick={submitAssessment}
-                disabled={workspaceLocked || isSubmittingAssessment}
-                suppressHydrationWarning
-                className="game-button"
-              >
-                {workspaceLocked ? <LockKeyhole className="h-4 w-4" /> : <Send className="h-4 w-4" />}
-                {isSubmitted
-                  ? "Submitted"
-                  : isExpired
-                    ? "Expired"
-                    : isSubmittingAssessment
-                      ? "Submitting..."
-                      : "Submit Assessment"}
-              </button>
+            <div className="grid gap-3 px-6 py-5 md:grid-cols-2">
+              <StatusTile label="Required completed" value={`${completedRequired}/3`} />
+              <StatusTile
+                label="Review status"
+                value={isSubmitted ? "Locked" : isExpired ? "Expired" : "In progress"}
+              />
             </div>
+          </header>
+
+          {isExpired && !isSubmitted ? (
+            <div className="card px-5 py-4 text-[14px] font-medium text-[var(--danger)]">
+              The 4-hour timer has expired. The workspace is now locked.
+            </div>
+          ) : null}
+
+          {submitMessage ? (
+            <div className="card px-5 py-4 text-[14px] font-medium text-[var(--ink-900)]">
+              {submitMessage}
+            </div>
+          ) : null}
+
+          {/* Task switcher â€” one task at a time */}
+          <div className="card flex gap-1.5 overflow-x-auto p-1.5">
+            {tabs.map((tab, index) => {
+              const isActive = activeTab === index;
+              return (
+                <button
+                  key={tab.label}
+                  type="button"
+                  onClick={() => setActiveTab(index)}
+                  suppressHydrationWarning
+                  className={`flex flex-1 items-center justify-center gap-2 whitespace-nowrap px-3 py-2.5 text-[13px] font-semibold transition-colors ${
+                    isActive
+                      ? "bg-[var(--ink-900)] text-white"
+                      : "text-[var(--ink-muted)] hover:bg-[var(--sky-50)]"
+                  }`}
+                >
+                  <span className="mono flex h-5 w-5 items-center justify-center text-[11px]">
+                    {tab.done ? (
+                      <Check className="h-4 w-4 text-[var(--sky-500)]" strokeWidth={3} />
+                    ) : (
+                      <span className={isActive ? "text-[var(--sky-400)]" : "text-[var(--ink-faint)]"}>
+                        {tab.n}
+                      </span>
+                    )}
+                  </span>
+                  <span className="hidden sm:inline">{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
 
-          <div className="grid gap-3 px-6 py-5 md:grid-cols-2">
-            <StatusTile label="Required completed" value={`${completedRequired}/3`} />
-            <StatusTile
-              label="Review status"
-              value={isSubmitted ? "Locked" : isExpired ? "Expired" : "In progress"}
-            />
-          </div>
-        </header>
-
-        {isExpired && !isSubmitted ? (
-          <div className="card px-5 py-4 text-[14px] font-medium text-[#d70015]">
-            The 4-hour timer has expired. The workspace is now locked.
-          </div>
-        ) : null}
-
-        {submitMessage ? (
-          <div className="card px-5 py-4 text-[14px] font-medium text-[#1d1d1f]">
-            {submitMessage}
-          </div>
-        ) : null}
-
-        <section className="space-y-5">
-            <TaskCard
-              id="task-1"
-              number="1"
-              title="Website Redesign"
-              objective="Redesign an Ajaia page for stronger layout, hierarchy, conversion, responsiveness, and motion."
-              required
-            >
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
-                <div className="lg:w-[420px] lg:shrink-0">
-                  <ExplainerVideo url={taskVideos.website} />
-                </div>
-                <div className="note flex flex-1 flex-col">
-                  <p className="text-[13px] font-semibold text-[#1d1d1f]">
-                    About this task
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-[#6e6e73]">
-                    Redesign one Ajaia page end to end — improve the layout and
-                    section structure, sharpen the visual hierarchy and
-                    messaging, and strengthen the conversion path. Show
-                    responsive behavior for desktop and mobile, and describe the
-                    animations, hover states, and microinteractions you would
-                    use. The full brief is on the guide.
-                  </p>
-                  <a
-                    href="https://ajaia.ai/"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-auto inline-flex w-fit pt-3 text-[14px] font-medium text-[#1d1d1f] underline underline-offset-4 decoration-[#d2d2d7] transition hover:decoration-[#1d1d1f]"
-                  >
-                    Source page: https://ajaia.ai/
-                  </a>
-                </div>
-              </div>
-              <SubmissionFields
-                figmaLabel="Figma link"
-                figmaValue={draft.websiteFigmaLink}
-                fileName={draft.websiteFileName}
-                explanationValue={draft.websiteExplanation}
-                figmaError={errors.websiteFigmaLink}
-                explanationError={errors.websiteExplanation}
-                onFigmaChange={(value) => updateDraft("websiteFigmaLink", value)}
-                onFileChange={(event) => handleFile("websiteFileName", event)}
-                onExplanationChange={(value) => updateDraft("websiteExplanation", value)}
-                disabled={workspaceLocked}
-              />
-              <Field
-                label="Short screen walkthrough URL"
-                error={errors.videoUrl}
-                hint="Show the motion/animation direction. Accepted: Loom, YouTube, Vimeo."
+          <section>
+            {activeTab === 0 ? (
+              <TaskCard
+                id="task-1"
+                number="1"
+                title="Website Redesign"
+                objective="Redesign one Ajaia page for stronger hierarchy, conversion, and motion."
+                required
               >
-                <input
-                  value={draft.videoUrl}
-                  onChange={(event) => updateDraft("videoUrl", event.target.value)}
-                  disabled={workspaceLocked}
-                  suppressHydrationWarning
-                  className="field-input"
-                  placeholder="https://www.loom.com/share/..."
-                />
-              </Field>
-            </TaskCard>
-
-            <TaskCard
-              id="task-2"
-              number="2"
-              title="Product UI Flow"
-              objective="Design a realistic, HIPAA-ready healthcare translation flow with key screens and real-time states."
-              required
-            >
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
-                <div className="lg:w-[420px] lg:shrink-0">
-                  <ExplainerVideo url={taskVideos.healthcare} />
-                </div>
-                <div className="note flex flex-1 flex-col">
-                  <p className="text-[13px] font-semibold text-[#1d1d1f]">
-                    About this task
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-[#6e6e73]">
-                    Design a realistic, HIPAA-ready healthcare translation flow.
-                    Cover the journey from patient intake to translated
-                    conversation, the key screens for patient and clinician, and
-                    the real-time states — listening, translating, reviewing,
-                    and confirming. Address consent, privacy, audit trail, and
-                    accessibility for stressful environments. The full brief is
-                    on the guide.
-                  </p>
-                </div>
-              </div>
-              <SubmissionFields
-                figmaLabel="Figma link"
-                figmaValue={draft.healthcareFigmaLink}
-                fileName={draft.healthcareFileName}
-                explanationValue={draft.healthcareExplanation}
-                figmaError={errors.healthcareFigmaLink}
-                explanationError={errors.healthcareExplanation}
-                onFigmaChange={(value) => updateDraft("healthcareFigmaLink", value)}
-                onFileChange={(event) => handleFile("healthcareFileName", event)}
-                onExplanationChange={(value) => updateDraft("healthcareExplanation", value)}
-                disabled={workspaceLocked}
-              />
-            </TaskCard>
-
-            <TaskCard
-              id="task-3"
-              number="3"
-              title="LinkedIn B2B Asset"
-              objective="Create a LinkedIn post and supporting B2B graphic from the AI Reality Check report."
-              required
-            >
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
-                <div className="lg:w-[420px] lg:shrink-0">
-                  <ExplainerVideo url={taskVideos.linkedin} />
-                </div>
-                <div className="note flex flex-1 flex-col">
-                  <p className="text-[13px] font-semibold text-[#1d1d1f]">
-                    About this task
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-[#6e6e73]">
-                    Create a LinkedIn post from the 2026 AI Reality Check report
-                    plus a supporting B2B graphic. Keep it credible, sharp, and
-                    operator-minded for executives, operators, and enterprise
-                    teams focused on real implementation. Write the copy in the
-                    editor below and attach the graphic. The full brief is on
-                    the guide.
-                  </p>
-                  <a
-                    href="https://ajaia.ai/2026-ai-reality-check-report"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-auto inline-flex w-fit pt-3 text-[14px] font-medium text-[#1d1d1f] underline underline-offset-4 decoration-[#d2d2d7] transition hover:decoration-[#1d1d1f]"
-                  >
-                    Source report: 2026 AI Reality Check Report
-                  </a>
-                </div>
-              </div>
-              <div className="rounded-xl bg-[#f5f5f7] p-4">
-                <div className="mb-3 flex flex-wrap gap-2">
-                  <ToolbarButton label="Bold" onClick={() => insertFormatting("**")} disabled={workspaceLocked}>
-                    <Type className="h-4 w-4" />
-                  </ToolbarButton>
-                  <ToolbarButton label="Italic" onClick={() => insertFormatting("_")} disabled={workspaceLocked}>
-                    <Italic className="h-4 w-4" />
-                  </ToolbarButton>
-                  <ToolbarButton label="Bullet" onClick={() => updateDraft("linkedinPost", `${draft.linkedinPost}${draft.linkedinPost ? "\n" : ""}- `)} disabled={workspaceLocked}>
-                    <List className="h-4 w-4" />
-                  </ToolbarButton>
-                </div>
-                <textarea
-                  value={draft.linkedinPost}
-                  onChange={(event) => updateDraft("linkedinPost", event.target.value)}
-                  disabled={workspaceLocked}
-                  suppressHydrationWarning
-                  className="field-textarea min-h-56"
-                  placeholder="Write the LinkedIn post here..."
-                />
-                <div className="mt-2 flex items-center justify-between gap-3 text-[12px] text-[#86868b]">
-                  <span>{errors.linkedinPost ? <span className="font-medium text-[#d70015]">{errors.linkedinPost}</span> : "Your post is submitted only when you submit the assessment."}</span>
-                  <span>{draft.linkedinPost.length} characters</span>
-                </div>
-              </div>
-              <div className="grid gap-4 lg:grid-cols-2">
-                <FileInput
-                  label="Supporting B2B graphic upload"
-                  fileName={draft.marketingFileName}
-                  onChange={(event) => handleFile("marketingFileName", event)}
-                  disabled={workspaceLocked}
-                  error={errors.marketingFigmaLink}
-                />
-                <Field label="Supporting B2B graphic Figma link" error={errors.marketingFigmaLink} hint="Upload a file or paste a Figma link.">
-                  <div className="relative">
-                    <LinkIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
-                    <input
-                      value={draft.marketingFigmaLink}
-                      onChange={(event) => updateDraft("marketingFigmaLink", event.target.value)}
-                      disabled={workspaceLocked}
-                      suppressHydrationWarning
-                      className="field-input pl-10"
-                      placeholder="https://figma.com/..."
-                    />
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
+                  <div className="lg:w-[420px] lg:shrink-0">
+                    <ExplainerVideo url={taskVideos.website} />
                   </div>
+                  <div className="note flex flex-1 flex-col">
+                    <p className="eyebrow">About this task</p>
+                    <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
+                      Redesign one Ajaia page end to end: sharpen layout,
+                      hierarchy, and the conversion path. Show desktop + mobile,
+                      and note your motion direction.
+                    </p>
+                    <a
+                      href="https://ajaia.ai/"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="source-link mt-auto"
+                    >
+                      <LinkIcon className="h-3.5 w-3.5" />
+                      Source: ajaia.ai
+                      <span className="source-link-arrow" aria-hidden>↗</span>
+                    </a>
+                  </div>
+                </div>
+                <SubmissionFields
+                  figmaLabel="Figma link"
+                  figmaValue={draft.websiteFigmaLink}
+                  fileName={draft.websiteFileName}
+                  explanationValue={draft.websiteExplanation}
+                  figmaError={errors.websiteFigmaLink}
+                  explanationError={errors.websiteExplanation}
+                  onFigmaChange={(value) => updateDraft("websiteFigmaLink", value)}
+                  onFileChange={(event) => handleFile("websiteFileName", event)}
+                  onExplanationChange={(value) => updateDraft("websiteExplanation", value)}
+                  disabled={workspaceLocked}
+                />
+                <Field
+                  label="Walkthrough video URL"
+                  error={errors.videoUrl}
+                  hint="Loom, YouTube, or Vimeo."
+                >
+                  <input
+                    value={draft.videoUrl}
+                    onChange={(event) => updateDraft("videoUrl", event.target.value)}
+                    disabled={workspaceLocked}
+                    suppressHydrationWarning
+                    className="field-input"
+                    placeholder="https://www.loom.com/share/..."
+                  />
                 </Field>
-              </div>
-            </TaskCard>
-          </section>
-      </div>
+              </TaskCard>
+            ) : null}
 
-      {showSubmitModal ? (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="submit-success-title"
-        >
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 text-center shadow-[0_20px_70px_rgba(0,0,0,0.18)]">
-            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#f5f5f7] text-[#1d1d1f]">
-              <CheckCircle2 className="h-6 w-6" />
-            </span>
-            <h2
-              id="submit-success-title"
-              className="mt-4 text-[22px] font-semibold tracking-[-0.022em] text-[#1d1d1f]"
+            {activeTab === 1 ? (
+              <TaskCard
+                id="task-2"
+                number="2"
+                title="Product UI Flow"
+                objective="Design a HIPAA-ready healthcare translation flow."
+                required
+              >
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
+                  <div className="lg:w-[420px] lg:shrink-0">
+                    <ExplainerVideo url={taskVideos.healthcare} />
+                  </div>
+                  <div className="note flex flex-1 flex-col">
+                    <p className="eyebrow">About this task</p>
+                    <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
+                      Map the journey from intake to translated conversation.
+                      Show key patient + clinician screens and the real-time
+                      states â€” listening, translating, reviewing, confirming.
+                      Address consent and accessibility.
+                    </p>
+                  </div>
+                </div>
+                <SubmissionFields
+                  figmaLabel="Figma link"
+                  figmaValue={draft.healthcareFigmaLink}
+                  fileName={draft.healthcareFileName}
+                  explanationValue={draft.healthcareExplanation}
+                  figmaError={errors.healthcareFigmaLink}
+                  explanationError={errors.healthcareExplanation}
+                  onFigmaChange={(value) => updateDraft("healthcareFigmaLink", value)}
+                  onFileChange={(event) => handleFile("healthcareFileName", event)}
+                  onExplanationChange={(value) => updateDraft("healthcareExplanation", value)}
+                  disabled={workspaceLocked}
+                />
+              </TaskCard>
+            ) : null}
+
+            {activeTab === 2 ? (
+              <TaskCard
+                id="task-3"
+                number="3"
+                title="LinkedIn B2B Asset"
+                objective="A LinkedIn post + supporting graphic from the AI Reality Check report."
+                required
+              >
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
+                  <div className="lg:w-[420px] lg:shrink-0">
+                    <ExplainerVideo url={taskVideos.linkedin} />
+                  </div>
+                  <div className="note flex flex-1 flex-col">
+                    <p className="eyebrow">About this task</p>
+                    <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
+                      Draft a sharp, operator-minded post from the 2026 AI
+                      Reality Check report and attach a supporting B2B graphic.
+                    </p>
+                    <a
+                      href="https://ajaia.ai/2026-ai-reality-check-report"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="source-link mt-auto"
+                    >
+                      <LinkIcon className="h-3.5 w-3.5" />
+                      Source: 2026 AI Reality Check Report
+                      <span className="source-link-arrow" aria-hidden>↗</span>
+                    </a>
+                  </div>
+                </div>
+                <div className="rounded-[10px] border border-[var(--line-light)] bg-[var(--sky-50)] p-4">
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    <ToolbarButton label="Bold" onClick={() => insertFormatting("**")} disabled={workspaceLocked}>
+                      <Type className="h-4 w-4" />
+                    </ToolbarButton>
+                    <ToolbarButton label="Italic" onClick={() => insertFormatting("_")} disabled={workspaceLocked}>
+                      <Italic className="h-4 w-4" />
+                    </ToolbarButton>
+                    <ToolbarButton label="Bullet" onClick={() => updateDraft("linkedinPost", `${draft.linkedinPost}${draft.linkedinPost ? "\n" : ""}- `)} disabled={workspaceLocked}>
+                      <List className="h-4 w-4" />
+                    </ToolbarButton>
+                  </div>
+                  <textarea
+                    value={draft.linkedinPost}
+                    onChange={(event) => updateDraft("linkedinPost", event.target.value)}
+                    disabled={workspaceLocked}
+                    suppressHydrationWarning
+                    className="field-textarea min-h-56"
+                    placeholder="Write the LinkedIn post here..."
+                  />
+                  <div className="mt-2 flex items-center justify-between gap-3 text-[12px] text-[var(--ink-subtle)]">
+                    <span>{errors.linkedinPost ? <span className="font-medium text-[var(--danger)]">{errors.linkedinPost}</span> : "Saved when you submit."}</span>
+                    <span className="mono">{draft.linkedinPost.length} chars</span>
+                  </div>
+                </div>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <FileInput
+                    label="Supporting graphic upload"
+                    fileName={draft.marketingFileName}
+                    onChange={(event) => handleFile("marketingFileName", event)}
+                    disabled={workspaceLocked}
+                    error={errors.marketingFigmaLink}
+                  />
+                  <Field label="Graphic Figma link" error={errors.marketingFigmaLink} hint="Upload a file or paste a link.">
+                    <div className="relative">
+                      <LinkIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-subtle)]" />
+                      <input
+                        value={draft.marketingFigmaLink}
+                        onChange={(event) => updateDraft("marketingFigmaLink", event.target.value)}
+                        disabled={workspaceLocked}
+                        suppressHydrationWarning
+                        className="field-input pl-10"
+                        placeholder="https://figma.com/..."
+                      />
+                    </div>
+                  </Field>
+                </div>
+              </TaskCard>
+            ) : null}
+
+
+            <div className="mt-5 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setActiveTab((tab) => Math.max(0, tab - 1))}
+                disabled={activeTab === 0}
+                suppressHydrationWarning
+                className="game-button-secondary"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </button>
+              {activeTab < tabs.length - 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab((tab) => Math.min(tabs.length - 1, tab + 1))}
+                  suppressHydrationWarning
+                  className="game-button"
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={submitAssessment}
+                  disabled={workspaceLocked || isSubmittingAssessment}
+                  suppressHydrationWarning
+                  className="game-button"
+                >
+                  {workspaceLocked ? <LockKeyhole className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+                  {isSubmitted ? "Submitted" : isExpired ? "Expired" : "Submit Assessment"}
+                </button>
+              )}
+            </div>
+          </section>
+        </div>
+
+        {showSubmitModal ? (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center px-4 backdrop-blur-sm"
+            style={{ background: "rgba(0, 13, 51, 0.45)" }}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="submit-success-title"
+          >
+            <div
+              className="w-full max-w-md bg-white p-8 text-center"
+              style={{
+                borderRadius: "var(--r-2)",
+                boxShadow: "var(--shadow-2)",
+                borderTop: "3px solid var(--sky-400)",
+              }}
             >
-              Assessment submitted
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-[#6e6e73]">
-              Your work is locked and ready for review. You can now view the
-              final submission confirmation.
-            </p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <button
-                type="button"
-                onClick={() => router.push("/confirmation")}
-                suppressHydrationWarning
-                className="game-button flex-1"
+              <span className="mx-auto flex h-12 w-12 items-center justify-center bg-[var(--ink-900)] text-[var(--sky-400)]">
+                <CheckCircle2 className="h-6 w-6" />
+              </span>
+              <h2
+                id="submit-success-title"
+                className="mt-4 text-[22px] font-bold tracking-[-0.01em] text-[var(--ink-900)]"
               >
-                View confirmation
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowSubmitModal(false)}
-                suppressHydrationWarning
-                className="game-button-secondary flex-1"
-              >
-                Stay here
-              </button>
+                Assessment submitted
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
+                Your work is locked and ready for review. You can now view the
+                final submission confirmation.
+              </p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => router.push("/confirmation")}
+                  suppressHydrationWarning
+                  className="game-button flex-1"
+                >
+                  View confirmation
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowSubmitModal(false)}
+                  suppressHydrationWarning
+                  className="game-button-secondary flex-1"
+                >
+                  Stay here
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
       </main>
     </>
   );
@@ -598,16 +687,16 @@ function TaskCard({
 }) {
   return (
     <article id={id} className="card scroll-mt-6">
-      <div className="flex flex-col gap-3 border-b border-black/[0.06] px-6 py-5 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-3 border-b border-[var(--line-light)] px-6 py-5 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex gap-4">
-          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1d1d1f] text-[13px] font-semibold text-white">
+          <span className="mono mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center bg-[var(--ink-900)] text-[14px] font-medium text-[var(--sky-400)]">
             {number}
           </span>
           <div>
             <div className="flex flex-wrap items-center gap-2.5">
               <h2 className="title-md">{title}</h2>
               {required ? (
-                <span className="rounded-full bg-[#f5f5f7] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.04em] text-[#6e6e73]">
+                <span className="bg-[var(--sky-100)] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[var(--ink-600)]">
                   Required
                 </span>
               ) : null}
@@ -649,7 +738,7 @@ function SubmissionFields({
       <div className="grid gap-4 lg:grid-cols-2">
         <Field label={figmaLabel} error={figmaError}>
           <div className="relative">
-            <LinkIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
+            <LinkIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--ink-subtle)]" />
             <input
               value={figmaValue}
               onChange={(event) => onFigmaChange(event.target.value)}
@@ -698,7 +787,7 @@ function FileInput({
     <Field label={label} hint="PDF, PNG, JPG" error={error}>
       <label className={`file-drop ${disabled ? "cursor-not-allowed opacity-60" : "file-drop-active"}`}>
         <span className="truncate">{fileName || "Upload PDF, PNG, or JPG"}</span>
-        <FileUp className="h-4 w-4 shrink-0 text-[#86868b]" />
+        <FileUp className="h-4 w-4 shrink-0 text-[var(--ink-subtle)]" />
         <input
           type="file"
           accept={acceptedDesignFiles}
@@ -751,7 +840,7 @@ function ToolbarButton({
       disabled={disabled}
       title={label}
       suppressHydrationWarning
-      className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.08)] transition-all duration-200 hover:bg-[#e8e8ed] active:scale-95 disabled:cursor-not-allowed disabled:text-[#86868b]"
+      className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-[var(--line-light)] bg-white text-[var(--ink-900)] transition-all duration-200 hover:border-[var(--sky-400)] hover:bg-[var(--sky-50)] active:scale-95 disabled:cursor-not-allowed disabled:text-[var(--ink-subtle)]"
     >
       {children}
     </button>
@@ -760,12 +849,12 @@ function ToolbarButton({
 
 function StatusTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex min-h-16 items-center justify-between gap-4 rounded-xl bg-[#f5f5f7] px-4 py-3">
+    <div className="flex min-h-16 items-center justify-between gap-4 rounded-[10px] border border-[var(--line-light)] bg-[var(--sky-50)] px-4 py-3">
       <div>
         <p className="eyebrow">{label}</p>
-        <p className="mt-1 text-[15px] font-semibold text-[#1d1d1f]">{value}</p>
+        <p className="mono mt-1 text-[15px] text-[var(--ink-900)]">{value}</p>
       </div>
-      <CheckCircle2 className="h-4 w-4 text-[#86868b]" />
+      <CheckCircle2 className="h-4 w-4 text-[var(--sky-500)]" />
     </div>
   );
 }

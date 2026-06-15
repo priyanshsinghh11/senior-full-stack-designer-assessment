@@ -1,22 +1,57 @@
 @import "tailwindcss";
 
+/* ============================================================
+   Ajaia Design System V2 — tokens
+   Navy is the brand. Sky is the accent. Everything else supports.
+   ============================================================ */
 :root {
-  --background: #f5f5f7;
-  --surface: #ffffff;
-  --foreground: #1d1d1f;
-  --secondary: #6e6e73;
-  --tertiary: #86868b;
-  --separator: #d2d2d7;
-  --separator-soft: rgba(0, 0, 0, 0.06);
-  --fill: #f5f5f7;
-  --fill-secondary: #e8e8ed;
-  --accent: #1d1d1f;
-  --danger: #d70015;
+  /* Brand */
+  --ink-900: #001d6b;
+  --ink-700: #0b2e8e;
+  --ink-600: #1b3fa3;
+  --sky-500: #6ea4e6;
+  --sky-400: #97c2f8;
+  --sky-300: #b6d4fa;
+  --sky-100: #e1eeff;
+  --sky-50: #f1f7ff;
+  --cream-100: #ffffe6;
+
+  /* Neutrals */
+  --paper: #ffffff;
+  --paper-warm: #f0ede5;
+  --ink-ink: #1b1c1c;
+  --ink-muted: #272d3b;
+  --ink-subtle: #6b7280;
+  --ink-faint: #9aa3af;
+  --line-light: rgba(0, 0, 0, 0.08);
+  --line-dark: rgba(255, 255, 255, 0.1);
+
+  /* System */
+  --danger: #c0341d;
+  --background: var(--sky-50);
+  --foreground: var(--ink-ink);
+
+  /* Shape */
+  --r-0: 0px;
+  --r-2: 10px;
+  --r-pill: 9999px;
+
+  /* Shadows */
+  --shadow-1: 0 1px 2px rgba(0, 29, 107, 0.06), 0 8px 24px -8px rgba(0, 29, 107, 0.12);
+  --shadow-2: 0 24px 60px -20px rgba(0, 29, 107, 0.35);
+
+  /* Motion */
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-fast: 120ms;
+  --dur: 180ms;
+  --dur-slow: 320ms;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --font-sans: var(--font-poppins);
+  --font-mono: var(--font-fragment-mono);
 }
 
 html {
@@ -29,20 +64,21 @@ body {
   min-height: 100vh;
   background: var(--background);
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text",
-    "SF Pro Display", "Helvetica Neue", "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-poppins), "Montserrat", "Inter", system-ui, sans-serif;
   font-feature-settings: "kern" 1, "liga" 1;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.002em;
 }
 
 h1,
 h2,
-h3 {
-  letter-spacing: -0.022em;
+h3,
+h4 {
+  font-weight: 700;
 }
 
 ::selection {
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--sky-100);
+  color: var(--ink-900);
 }
 
 button,
@@ -53,77 +89,336 @@ textarea {
 }
 
 @layer components {
-  /* Surfaces */
+  /* ---------- Surfaces ---------- */
   .card {
-    @apply rounded-2xl border border-black/[0.06] bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.04)];
+    @apply border bg-white;
+    border-color: var(--line-light);
+    border-radius: var(--r-2);
+    box-shadow: var(--shadow-1);
   }
 
   .card-header {
-    @apply border-b border-black/[0.06] px-6 py-5;
+    @apply px-6 py-5;
+    border-bottom: 1px solid var(--line-light);
   }
 
   .card-body {
     @apply p-6;
   }
 
-  /* Neutral callout — replaces all colored tinted boxes */
+  /* Soft tinted callout on light */
   .note {
-    @apply rounded-xl bg-[#f5f5f7] p-5;
+    @apply p-5;
+    background: var(--sky-50);
+    border: 1px solid var(--line-light);
+    border-radius: var(--r-2);
   }
 
-  /* Typography helpers */
+  /* Navy surface — alternate band */
+  .surface-navy {
+    background: var(--ink-900);
+    color: #ffffff;
+  }
+
+  /* ---------- Typography helpers ---------- */
   .eyebrow {
-    @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-[#86868b];
+    font-size: 13px;
+    line-height: 1.5;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-600);
+  }
+
+  /* Eyebrow on navy — the signature sky tag */
+  .eyebrow-sky {
+    color: var(--sky-400);
+  }
+
+  .mono {
+    font-family: var(--font-fragment-mono), ui-monospace, monospace;
+    font-size: 13px;
+    line-height: 1.55;
+    letter-spacing: 0;
   }
 
   .title-lg {
-    @apply text-[28px] font-semibold leading-tight tracking-[-0.022em] text-[#1d1d1f];
+    font-size: 30px;
+    line-height: 1.26;
+    letter-spacing: -0.015em;
+    font-weight: 700;
+    color: var(--ink-900);
   }
 
   .title-md {
-    @apply text-[19px] font-semibold tracking-[-0.02em] text-[#1d1d1f];
+    font-size: 22px;
+    line-height: 1.36;
+    letter-spacing: -0.01em;
+    font-weight: 600;
+    color: var(--ink-900);
   }
 
   .text-secondary-apple {
-    @apply text-sm leading-6 text-[#6e6e73];
+    @apply text-sm leading-6;
+    color: var(--ink-muted);
   }
 
-  /* Form controls */
+  /* ---------- Decorative squares — Ajaia's terminal ball ---------- */
+  .deco-squares {
+    position: relative;
+    display: inline-block;
+    width: 26px;
+    height: 26px;
+  }
+  .deco-squares::before,
+  .deco-squares::after {
+    content: "";
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: var(--sky-400);
+  }
+  .deco-squares::before {
+    top: 0;
+    left: 0;
+  }
+  .deco-squares::after {
+    bottom: 0;
+    right: 0;
+  }
+
+  /* ---------- Form controls ---------- */
   .field-label {
-    @apply mb-2 block text-[13px] font-medium text-[#1d1d1f];
+    @apply mb-2 block text-[13px] font-medium;
+    color: var(--ink-900);
   }
 
   .field-input {
-    @apply min-h-11 w-full rounded-xl border border-[#d2d2d7] bg-white px-3.5 py-2.5 text-[15px] text-[#1d1d1f] outline-none transition-all duration-200 placeholder:text-[#86868b] hover:border-[#a1a1a6] focus:border-[#1d1d1f] focus:ring-4 focus:ring-black/[0.06] disabled:bg-[#f5f5f7] disabled:text-[#86868b];
+    @apply min-h-11 w-full px-3.5 py-2.5 text-[15px] outline-none;
+    color: var(--ink-ink);
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--r-2);
+    transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .field-input::placeholder {
+    color: var(--ink-subtle);
+  }
+  .field-input:hover {
+    border-color: var(--sky-400);
+  }
+  .field-input:focus {
+    border-color: var(--ink-600);
+    box-shadow: 0 0 0 3px var(--sky-100);
+  }
+  .field-input:disabled {
+    background: var(--sky-50);
+    color: var(--ink-subtle);
   }
 
   .field-textarea {
-    @apply w-full resize-y rounded-xl border border-[#d2d2d7] bg-white px-3.5 py-2.5 text-[15px] leading-6 text-[#1d1d1f] outline-none transition-all duration-200 placeholder:text-[#86868b] hover:border-[#a1a1a6] focus:border-[#1d1d1f] focus:ring-4 focus:ring-black/[0.06] disabled:bg-[#f5f5f7] disabled:text-[#86868b];
+    @apply w-full resize-y px-3.5 py-2.5 text-[15px] leading-6 outline-none;
+    color: var(--ink-ink);
+    background: var(--paper);
+    border: 1px solid var(--line-light);
+    border-radius: var(--r-2);
+    transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+  }
+  .field-textarea::placeholder {
+    color: var(--ink-subtle);
+  }
+  .field-textarea:hover {
+    border-color: var(--sky-400);
+  }
+  .field-textarea:focus {
+    border-color: var(--ink-600);
+    box-shadow: 0 0 0 3px var(--sky-100);
+  }
+  .field-textarea:disabled {
+    background: var(--sky-50);
+    color: var(--ink-subtle);
   }
 
   .field-hint {
-    @apply mt-1.5 block text-[12px] text-[#86868b];
+    @apply mt-1.5 block text-[12px];
+    color: var(--ink-subtle);
   }
 
   .field-error {
-    @apply mt-1.5 block text-[12px] font-medium text-[#d70015];
+    @apply mt-1.5 block text-[12px] font-medium;
+    color: var(--danger);
   }
 
-  /* Buttons — Apple pill style */
+  /* ---------- Buttons — square structural CTAs ---------- */
+  /* Primary: navy on light, with sky shine sweep on hover */
   .game-button {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#1d1d1f] px-6 py-2.5 text-[15px] font-medium text-white transition-all duration-200 hover:bg-black hover:shadow-[0_4px_14px_rgba(0,0,0,0.2)] active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-[#d2d2d7] disabled:shadow-none;
+    @apply relative inline-flex min-h-11 items-center justify-center gap-2 overflow-hidden px-6 py-2.5 text-[15px] font-semibold text-white;
+    background: var(--ink-900);
+    border: 1px solid var(--ink-900);
+    border-radius: var(--r-0);
+    transition: background var(--dur) var(--ease), transform var(--dur-fast) var(--ease),
+      box-shadow var(--dur) var(--ease);
+  }
+  .game-button::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      120deg,
+      transparent 0%,
+      rgba(151, 194, 248, 0.35) 50%,
+      transparent 100%
+    );
+    transform: translateX(-120%);
+    transition: transform var(--dur-slow) var(--ease);
+  }
+  .game-button:hover {
+    background: var(--ink-700);
+    box-shadow: var(--shadow-1);
+  }
+  .game-button:hover::after {
+    transform: translateX(120%);
+  }
+  .game-button:active {
+    transform: scale(0.985);
+  }
+  .game-button:disabled {
+    opacity: 0.4;
+    pointer-events: none;
   }
 
+  /* Secondary: outline on light */
   .game-button-secondary {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-[#d2d2d7] bg-white px-5 py-2.5 text-[15px] font-medium text-[#1d1d1f] transition-all duration-200 hover:border-[#a1a1a6] hover:bg-[#f5f5f7] active:scale-[0.98] disabled:cursor-not-allowed disabled:text-[#86868b];
+    @apply inline-flex min-h-11 items-center justify-center gap-2 px-5 py-2.5 text-[15px] font-semibold;
+    color: var(--ink-900);
+    background: var(--paper);
+    border: 1px solid var(--ink-900);
+    border-radius: var(--r-0);
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease),
+      transform var(--dur-fast) var(--ease);
+  }
+  .game-button-secondary:hover {
+    background: var(--sky-50);
+  }
+  .game-button-secondary:active {
+    transform: scale(0.985);
+  }
+  .game-button-secondary:disabled {
+    opacity: 0.4;
+    pointer-events: none;
   }
 
-  /* File drop zone */
+  /* CTA on dark — sky-400 fill */
+  .game-button-sky {
+    @apply relative inline-flex min-h-11 items-center justify-center gap-2 overflow-hidden px-6 py-2.5 text-[15px] font-semibold;
+    color: var(--ink-900);
+    background: var(--sky-400);
+    border: 1px solid var(--sky-400);
+    border-radius: var(--r-0);
+    transition: background var(--dur) var(--ease), transform var(--dur-fast) var(--ease);
+  }
+  .game-button-sky:hover {
+    background: var(--sky-300);
+  }
+  .game-button-sky:active {
+    transform: scale(0.985);
+  }
+  .game-button-sky:disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  /* ---------- File drop zone ---------- */
   .file-drop {
-    @apply flex min-h-11 items-center justify-between gap-3 rounded-xl border border-dashed border-[#d2d2d7] bg-[#f5f5f7] px-3.5 py-2.5 text-[14px] text-[#6e6e73] transition-all duration-200;
+    @apply flex min-h-11 items-center justify-between gap-3 px-3.5 py-2.5 text-[14px];
+    color: var(--ink-muted);
+    background: var(--sky-50);
+    border: 1px dashed var(--line-light);
+    border-radius: var(--r-2);
+    transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
   }
 
-  .file-drop-active {
-    @apply cursor-pointer hover:border-[#86868b] hover:bg-[#e8e8ed];
+  .file-drop-active:hover {
+    @apply cursor-pointer;
+    border-color: var(--sky-400);
+    background: var(--sky-100);
+  }
+
+  /* ---------- Highlighted source link — sky chip ---------- */
+  .source-link {
+    @apply inline-flex w-fit items-center gap-2 px-3 py-1.5 text-[13px] font-semibold;
+    color: var(--ink-900);
+    background: var(--sky-100);
+    border: 1px solid var(--sky-300);
+    border-radius: var(--r-0);
+    transition: background var(--dur) var(--ease),
+      border-color var(--dur) var(--ease), transform var(--dur-fast) var(--ease),
+      box-shadow var(--dur) var(--ease);
+  }
+  .source-link:hover {
+    background: var(--sky-400);
+    border-color: var(--sky-400);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-1);
+  }
+  .source-link .source-link-arrow {
+    font-size: 14px;
+    line-height: 1;
+    transition: transform var(--dur) var(--ease);
+  }
+  .source-link:hover .source-link-arrow {
+    transform: translate(1px, -1px);
+  }
+
+  /* ---------- Range slider — navy track, square sky thumb ---------- */
+  .ajaia-range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    background: var(--sky-100);
+    border: 1px solid var(--line-light);
+    border-radius: var(--r-pill);
+    outline: none;
+    cursor: pointer;
+  }
+  .ajaia-range:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .ajaia-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--sky-400);
+    border: 2px solid var(--ink-900);
+    border-radius: var(--r-0);
+    transition: background var(--dur) var(--ease);
+  }
+  .ajaia-range::-webkit-slider-thumb:hover {
+    background: var(--sky-300);
+  }
+  .ajaia-range::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: var(--sky-400);
+    border: 2px solid var(--ink-900);
+    border-radius: var(--r-0);
+  }
+  .ajaia-range::-moz-range-track {
+    height: 6px;
+    background: var(--sky-100);
+    border-radius: var(--r-pill);
+  }
+
+  /* ---------- Focus ring ---------- */
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--sky-400);
+    outline-offset: 2px;
   }
 }
