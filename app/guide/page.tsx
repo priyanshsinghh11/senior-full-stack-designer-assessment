@@ -101,9 +101,25 @@ export default function AssessmentGuidePage() {
         throw new Error("Candidate information was not found. Please complete Page 1 again.");
       }
 
+      const supabase = getSupabaseClient();
+      const { data: candidate, error: candidateError } = await supabase
+        .from("candidates")
+        .select("id")
+        .eq("id", candidateId)
+        .maybeSingle();
+
+      if (candidateError) {
+        throw new Error(candidateError.message);
+      }
+
+      if (!candidate) {
+        clearStoredAssessment();
+        throw new Error("Candidate information was not found in the database. Please complete Page 1 again.");
+      }
+
       const now = new Date();
       const expiresAt = new Date(now.getTime() + 4 * 60 * 60 * 1000);
-      const { data: session, error } = await getSupabaseClient()
+      const { data: session, error } = await supabase
         .from("assessment_sessions")
         .insert({
           candidate_id: candidateId,
@@ -267,6 +283,16 @@ export default function AssessmentGuidePage() {
       </div>
     </main>
   );
+}
+
+function clearStoredAssessment() {
+  localStorage.removeItem("assessmentCandidateId");
+  localStorage.removeItem("assessmentCandidateName");
+  localStorage.removeItem("assessmentSessionId");
+  localStorage.removeItem("assessmentStartedAt");
+  localStorage.removeItem("assessmentExpiresAt");
+  localStorage.removeItem("assessmentWorkspaceDraft");
+  localStorage.removeItem("assessmentSubmitted");
 }
 
 function getEmbeddableVideoUrl(value: string) {
