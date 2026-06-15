@@ -8,7 +8,6 @@ import {
   LinkIcon,
   List,
   LockKeyhole,
-  Save,
   Send,
   Type,
 } from "lucide-react";
@@ -43,7 +42,6 @@ const emptyDraft: WorkspaceDraft = {
   videoUrl: "",
 };
 
-const autosaveKey = "assessmentWorkspaceDraft";
 const submittedKey = "assessmentSubmitted";
 const acceptedDesignFiles = ".pdf,.png,.jpg,.jpeg";
 const acceptedVideoHosts = ["loom.com", "youtube.com", "youtu.be", "vimeo.com"];
@@ -54,7 +52,6 @@ export default function WorkspacePage() {
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
   const [draft, setDraft] = useState<WorkspaceDraft>(emptyDraft);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [isSubmittingAssessment, setIsSubmittingAssessment] = useState(false);
@@ -71,15 +68,6 @@ export default function WorkspacePage() {
       const storedExpiry = localStorage.getItem("assessmentExpiresAt");
       if (storedExpiry) {
         setExpiresAt(new Date(storedExpiry));
-      }
-
-      const storedDraft = localStorage.getItem(autosaveKey);
-      if (storedDraft) {
-        try {
-          setDraft({ ...emptyDraft, ...JSON.parse(storedDraft) });
-        } catch {
-          setDraft(emptyDraft);
-        }
       }
     }, 0);
 
@@ -215,13 +203,6 @@ export default function WorkspacePage() {
     return Object.keys(nextErrors).length === 0;
   }
 
-  function saveProgress() {
-    if (workspaceLocked) return;
-    localStorage.setItem(autosaveKey, JSON.stringify(draft));
-    setLastSavedAt(new Date());
-    setSubmitMessage("Progress saved.");
-  }
-
   async function submitAssessment() {
     if (isExpired) {
       setSubmitMessage("The assessment timer has expired. Submissions are locked.");
@@ -288,7 +269,6 @@ export default function WorkspacePage() {
         throw new Error(sessionError.message);
       }
 
-      localStorage.setItem(autosaveKey, JSON.stringify(draft));
       localStorage.setItem(submittedKey, "true");
       localStorage.setItem("assessmentSubmittedAt", submittedAt);
       setIsSubmitted(true);
@@ -327,16 +307,6 @@ export default function WorkspacePage() {
               </div>
               <button
                 type="button"
-                onClick={saveProgress}
-                disabled={workspaceLocked}
-                suppressHydrationWarning
-                className="game-button-secondary"
-              >
-                <Save className="h-4 w-4" />
-                Save Progress
-              </button>
-              <button
-                type="button"
                 onClick={submitAssessment}
                 disabled={workspaceLocked || isSubmittingAssessment}
                 suppressHydrationWarning
@@ -354,12 +324,8 @@ export default function WorkspacePage() {
             </div>
           </div>
 
-          <div className="grid gap-3 px-6 py-5 md:grid-cols-3">
+          <div className="grid gap-3 px-6 py-5 md:grid-cols-2">
             <StatusTile label="Required completed" value={`${completedRequired}/3`} />
-            <StatusTile
-              label="Manual save"
-              value={lastSavedAt ? lastSavedAt.toLocaleTimeString() : "Not saved"}
-            />
             <StatusTile
               label="Review status"
               value={isSubmitted ? "Locked" : isExpired ? "Expired" : "In progress"}
@@ -528,7 +494,7 @@ export default function WorkspacePage() {
                   placeholder="Write the LinkedIn post here..."
                 />
                 <div className="mt-2 flex items-center justify-between gap-3 text-[12px] text-[#86868b]">
-                  <span>{errors.linkedinPost ? <span className="font-medium text-[#d70015]">{errors.linkedinPost}</span> : "Use Save Progress to store your draft."}</span>
+                  <span>{errors.linkedinPost ? <span className="font-medium text-[#d70015]">{errors.linkedinPost}</span> : "Your post is submitted only when you submit the assessment."}</span>
                   <span>{draft.linkedinPost.length} characters</span>
                 </div>
               </div>

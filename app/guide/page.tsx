@@ -19,7 +19,7 @@ const guideVideoUrl = process.env.NEXT_PUBLIC_GUIDE_VIDEO_URL || "";
 const checklist = [
   "Keep your Figma, portfolio, and reference files ready.",
   "Use one browser tab for the assessment workspace.",
-  "Save progress before switching networks or devices.",
+  "Keep the workspace open until you submit the final assessment.",
   "Submit before the timer reaches zero.",
 ];
 
@@ -250,8 +250,8 @@ export default function AssessmentGuidePage() {
                 Next screen
               </div>
               <p className="text-secondary-apple mt-2">
-                The workspace contains three assessment tasks, manual progress
-                save, file/link fields, and final submission validation.
+                The workspace contains three assessment tasks, file/link
+                fields, and final submission validation.
               </p>
               {startError ? (
                 <p className="mt-3 rounded-xl bg-[#f5f5f7] px-4 py-3 text-[13px] font-medium text-[#d70015]">
