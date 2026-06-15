@@ -246,6 +246,7 @@ export default function AssessmentGuidePage() {
                 type="button"
                 onClick={startAssessment}
                 disabled={isStarting}
+                suppressHydrationWarning
                 className="game-button mt-5 w-full"
               >
                 {isStarting ? (

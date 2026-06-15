@@ -329,6 +329,7 @@ export default function WorkspacePage() {
                 type="button"
                 onClick={saveProgress}
                 disabled={workspaceLocked}
+                suppressHydrationWarning
                 className="game-button-secondary"
               >
                 <Save className="h-4 w-4" />
@@ -338,6 +339,7 @@ export default function WorkspacePage() {
                 type="button"
                 onClick={submitAssessment}
                 disabled={workspaceLocked || isSubmittingAssessment}
+                suppressHydrationWarning
                 className="game-button"
               >
                 {workspaceLocked ? <LockKeyhole className="h-4 w-4" /> : <Send className="h-4 w-4" />}
@@ -449,6 +451,7 @@ export default function WorkspacePage() {
                   value={draft.videoUrl}
                   onChange={(event) => updateDraft("videoUrl", event.target.value)}
                   disabled={workspaceLocked}
+                  suppressHydrationWarning
                   className="field-input"
                   placeholder="https://www.loom.com/share/..."
                 />
@@ -520,6 +523,7 @@ export default function WorkspacePage() {
                   value={draft.linkedinPost}
                   onChange={(event) => updateDraft("linkedinPost", event.target.value)}
                   disabled={workspaceLocked}
+                  suppressHydrationWarning
                   className="field-textarea min-h-56"
                   placeholder="Write the LinkedIn post here..."
                 />
@@ -543,6 +547,7 @@ export default function WorkspacePage() {
                       value={draft.marketingFigmaLink}
                       onChange={(event) => updateDraft("marketingFigmaLink", event.target.value)}
                       disabled={workspaceLocked}
+                      suppressHydrationWarning
                       className="field-input pl-10"
                       placeholder="https://figma.com/..."
                     />
@@ -579,6 +584,7 @@ export default function WorkspacePage() {
               <button
                 type="button"
                 onClick={() => router.push("/confirmation")}
+                suppressHydrationWarning
                 className="game-button flex-1"
               >
                 View confirmation
@@ -586,6 +592,7 @@ export default function WorkspacePage() {
               <button
                 type="button"
                 onClick={() => setShowSubmitModal(false)}
+                suppressHydrationWarning
                 className="game-button-secondary flex-1"
               >
                 Stay here
@@ -680,6 +687,7 @@ function SubmissionFields({
               value={figmaValue}
               onChange={(event) => onFigmaChange(event.target.value)}
               disabled={disabled}
+              suppressHydrationWarning
               className="field-input pl-10"
               placeholder="https://figma.com/..."
             />
@@ -697,6 +705,7 @@ function SubmissionFields({
           value={explanationValue}
           onChange={(event) => onExplanationChange(event.target.value)}
           disabled={disabled}
+          suppressHydrationWarning
           className="field-textarea min-h-32"
           placeholder="Explain your design decisions, interactions, and responsive behavior."
         />
@@ -728,6 +737,7 @@ function FileInput({
           accept={acceptedDesignFiles}
           onChange={onChange}
           disabled={disabled}
+          suppressHydrationWarning
           className="sr-only"
         />
       </label>
@@ -773,6 +783,7 @@ function ToolbarButton({
       onClick={onClick}
       disabled={disabled}
       title={label}
+      suppressHydrationWarning
       className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.08)] transition-all duration-200 hover:bg-[#e8e8ed] active:scale-95 disabled:cursor-not-allowed disabled:text-[#86868b]"
     >
       {children}

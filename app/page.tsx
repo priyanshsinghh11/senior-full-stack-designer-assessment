@@ -3,115 +3,52 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowRight,
-  BriefcaseBusiness,
   CheckCircle2,
   LinkIcon,
   Loader2,
   Mail,
-  Upload,
   UserRound,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { ChangeEvent, ReactNode, useMemo, useState } from "react";
+import { ReactNode, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { ProgressSteps } from "@/components/progress-steps";
 import { getSupabaseClient } from "@/lib/supabase";
 
-const optionalUrl = z
+const requiredUrl = z
   .string()
   .trim()
-  .refine((value) => value.length === 0 || z.url().safeParse(value).success, {
+  .min(1, "Resume link is required.")
+  .refine((value) => z.url().safeParse(value).success, {
     message: "Enter a valid URL.",
   });
 
 const candidateSchema = z.object({
-  firstName: z.string().trim().min(1, "First name is required."),
-  lastName: z.string().trim().min(1, "Last name is required."),
+  fullName: z.string().trim().min(1, "Full name is required."),
   email: z.string().trim().email("Enter a valid email address."),
-  resumeLink: optionalUrl,
-  portfolioUrl: optionalUrl,
-  linkedinUrl: optionalUrl,
-  agreementConfirmed: z.boolean().refine((value) => value, {
-    message: "You must confirm this submission is your own work.",
-  }),
+  resumeLink: requiredUrl,
 });
 
 type CandidateForm = z.infer<typeof candidateSchema>;
 
-const acceptedResumeTypes = [
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-];
-
 export default function CandidateInformationPage() {
   const router = useRouter();
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState("");
 
   const {
     register,
     handleSubmit,
-    setError,
     formState: { errors, isSubmitting },
   } = useForm<CandidateForm>({
     resolver: zodResolver(candidateSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
+      fullName: "",
       email: "",
       resumeLink: "",
-      portfolioUrl: "",
-      linkedinUrl: "",
-      agreementConfirmed: false,
     },
   });
-
-  const resumeFileLabel = useMemo(() => {
-    if (!resumeFile) return "Upload PDF, DOC, or DOCX";
-    return `${resumeFile.name} (${Math.ceil(resumeFile.size / 1024)} KB)`;
-  }, [resumeFile]);
-
-  function handleResumeFileChange(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0] ?? null;
-
-    if (!file) {
-      setResumeFile(null);
-      return;
-    }
-
-    if (!acceptedResumeTypes.includes(file.type)) {
-      setResumeFile(null);
-      setError("resumeLink", {
-        message: "Resume upload must be a PDF, DOC, or DOCX file.",
-      });
-      return;
-    }
-
-    setResumeFile(file);
-    setSubmitError("");
-  }
-
-  async function uploadResume(file: File, email: string) {
-    const supabase = getSupabaseClient();
-    const extension = file.name.split(".").pop() ?? "pdf";
-    const safeEmail = email.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    const filePath = `${safeEmail}/${crypto.randomUUID()}.${extension}`;
-
-    const { error } = await supabase.storage.from("resumes").upload(filePath, file, {
-      cacheControl: "3600",
-      upsert: false,
-    });
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    const { data } = supabase.storage.from("resumes").getPublicUrl(filePath);
-    return data.publicUrl;
-  }
 
   async function onSubmit(values: CandidateForm) {
     setSubmitError("");
@@ -119,20 +56,14 @@ export default function CandidateInformationPage() {
 
     try {
       const supabase = getSupabaseClient();
-      const resumeUrl = resumeFile
-        ? await uploadResume(resumeFile, values.email)
-        : values.resumeLink?.trim() || null;
+      const fullName = values.fullName.trim();
 
       const { data: candidate, error: candidateError } = await supabase
         .from("candidates")
         .insert({
-          first_name: values.firstName,
-          last_name: values.lastName,
+          full_name: fullName,
           email: values.email,
-          resume_url: resumeUrl,
-          portfolio_url: values.portfolioUrl?.trim() || null,
-          linkedin_url: values.linkedinUrl?.trim() || null,
-          agreement_confirmed: values.agreementConfirmed,
+          resume_url: values.resumeLink.trim(),
         })
         .select("id")
         .single();
@@ -142,10 +73,7 @@ export default function CandidateInformationPage() {
       }
 
       localStorage.setItem("assessmentCandidateId", candidate.id);
-      localStorage.setItem(
-        "assessmentCandidateName",
-        `${values.firstName} ${values.lastName}`,
-      );
+      localStorage.setItem("assessmentCandidateName", fullName);
       localStorage.removeItem("assessmentSessionId");
       localStorage.removeItem("assessmentStartedAt");
       localStorage.removeItem("assessmentExpiresAt");
@@ -171,7 +99,7 @@ export default function CandidateInformationPage() {
           <p className="eyebrow">Candidate information</p>
           <h1 className="title-lg mt-2">Tell us about yourself</h1>
           <p className="text-secondary-apple mt-2">
-            Complete your profile details before opening the assessment guide.
+            Complete your basic details before opening the assessment guide.
           </p>
         </header>
 
@@ -179,165 +107,89 @@ export default function CandidateInformationPage() {
           <div className="card-header">
             <h2 className="title-md">User Information</h2>
             <p className="text-secondary-apple mt-1">
-              You can edit these details before opening the guide.
+              Enter your name, email, and resume link before opening the guide.
             </p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 p-6">
-              <div>
-                <div className="mb-4 flex items-center gap-2 text-[15px] font-semibold text-[#1d1d1f]">
-                  <UserRound className="h-4 w-4 text-[#86868b]" />
-                  Personal information
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="First name" error={errors.firstName?.message} required>
-                    <input
-                      {...register("firstName")}
-                      className="field-input"
-                      placeholder="Priyansh"
-                      autoComplete="given-name"
-                    />
-                  </Field>
-                  <Field label="Last name" error={errors.lastName?.message} required>
-                    <input
-                      {...register("lastName")}
-                      className="field-input"
-                      placeholder="Singh"
-                      autoComplete="family-name"
-                    />
-                  </Field>
-                </div>
-                <div className="mt-4">
-                  <Field label="Email address" error={errors.email?.message} required>
-                    <div className="relative">
-                      <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
-                      <input
-                        {...register("email")}
-                        className="field-input pl-10"
-                        placeholder="name@example.com"
-                        autoComplete="email"
-                      />
-                    </div>
-                  </Field>
-                </div>
+            <div>
+              <div className="mb-4 flex items-center gap-2 text-[15px] font-semibold text-[#1d1d1f]">
+                <UserRound className="h-4 w-4 text-[#86868b]" />
+                Candidate details
               </div>
 
-              <div>
-                <div className="mb-4 flex items-center gap-2 text-[15px] font-semibold text-[#1d1d1f]">
-                  <BriefcaseBusiness className="h-4 w-4 text-[#86868b]" />
-                  Professional information
-                </div>
-                <div className="grid gap-4">
-                  <div className="grid gap-4 lg:grid-cols-2">
-                    <Field label="Resume upload" hint="Optional: PDF, DOC, or DOCX">
-                      <label className="file-drop file-drop-active">
-                        <span className="truncate">{resumeFileLabel}</span>
-                        <Upload className="h-4 w-4 shrink-0 text-[#86868b]" />
-                        <input
-                          type="file"
-                          accept=".pdf,.doc,.docx"
-                          onChange={handleResumeFileChange}
-                          className="sr-only"
-                        />
-                      </label>
-                    </Field>
-
-                    <Field
-                      label="Resume link"
-                      hint="Optional"
-                      error={errors.resumeLink?.message}
-                    >
-                      <div className="relative">
-                        <LinkIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
-                        <input
-                          {...register("resumeLink")}
-                          className="field-input pl-10"
-                          placeholder="https://..."
-                        />
-                      </div>
-                    </Field>
-                  </div>
-
-                  <div className="grid gap-4 lg:grid-cols-2">
-                    <Field
-                      label="Portfolio URL"
-                      hint="Optional"
-                      error={errors.portfolioUrl?.message}
-                    >
-                      <input
-                        {...register("portfolioUrl")}
-                        className="field-input"
-                        placeholder="https://yourportfolio.com"
-                      />
-                    </Field>
-                    <Field
-                      label="LinkedIn URL"
-                      hint="Optional"
-                      error={errors.linkedinUrl?.message}
-                    >
-                      <input
-                        {...register("linkedinUrl")}
-                        className="field-input"
-                        placeholder="https://linkedin.com/in/..."
-                      />
-                    </Field>
-                  </div>
-                </div>
-              </div>
-
-              <div className="note">
-                <label className="flex gap-3">
+              <div className="grid gap-4">
+                <Field label="Full name" error={errors.fullName?.message} required>
                   <input
-                    type="checkbox"
-                    {...register("agreementConfirmed")}
-                    className="mt-1 h-4 w-4 rounded border-[#d2d2d7] accent-[#1d1d1f]"
+                    {...register("fullName")}
+                    suppressHydrationWarning
+                    className="field-input"
+                    placeholder="Priyansh Singh"
+                    autoComplete="name"
                   />
-                  <span>
-                    <span className="block text-[14px] font-medium text-[#1d1d1f]">
-                      I confirm that this assessment submission is my own work.
-                    </span>
-                    <span className="mt-1 block text-[13px] text-[#6e6e73]">
-                      Your candidate information will be used for this
-                      assessment.
-                    </span>
-                  </span>
-                </label>
-                {errors.agreementConfirmed?.message ? (
-                  <p className="field-error mt-3">
-                    {errors.agreementConfirmed.message}
-                  </p>
-                ) : null}
-              </div>
+                </Field>
 
-              {submitError ? (
-                <StatusMessage tone="error" message={submitError} />
-              ) : null}
-              {submitSuccess ? (
-                <StatusMessage tone="success" message={submitSuccess} />
-              ) : null}
+                <Field label="Email address" error={errors.email?.message} required>
+                  <div className="relative">
+                    <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
+                    <input
+                      {...register("email")}
+                      suppressHydrationWarning
+                      className="field-input pl-10"
+                      placeholder="name@example.com"
+                      autoComplete="email"
+                    />
+                  </div>
+                </Field>
 
-              <div className="flex flex-col gap-3 border-t border-black/[0.06] pt-6 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-secondary-apple">
-                  Only personal information and agreement are required for now.
-                </p>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="game-button"
+                <Field
+                  label="Resume link"
+                  error={errors.resumeLink?.message}
+                  required
                 >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      Continue to Guide
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
-                </button>
+                  <div className="relative">
+                    <LinkIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
+                    <input
+                      {...register("resumeLink")}
+                      suppressHydrationWarning
+                      className="field-input pl-10"
+                      placeholder="https://..."
+                    />
+                  </div>
+                </Field>
               </div>
+            </div>
+
+            {submitError ? (
+              <StatusMessage tone="error" message={submitError} />
+            ) : null}
+            {submitSuccess ? (
+              <StatusMessage tone="success" message={submitSuccess} />
+            ) : null}
+
+            <div className="flex flex-col gap-3 border-t border-black/[0.06] pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-secondary-apple">
+                Only full name, email, and resume link are required.
+              </p>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                suppressHydrationWarning
+                className="game-button"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    Continue to Guide
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </div>
           </form>
         </section>
       </div>

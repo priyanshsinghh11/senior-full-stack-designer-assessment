@@ -2,16 +2,65 @@ create extension if not exists "pgcrypto";
 
 create table if not exists public.candidates (
   id uuid primary key default gen_random_uuid(),
-  first_name text not null,
-  last_name text not null,
+  full_name text not null,
   email text not null,
-  resume_url text,
-  portfolio_url text,
-  linkedin_url text,
-  agreement_confirmed boolean not null default false,
+  resume_url text not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.candidates
+  add column if not exists full_name text;
+
+alter table public.candidates
+  add column if not exists resume_url text;
+
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'candidates'
+      and column_name = 'first_name'
+  ) then
+    execute $sql$
+      update public.candidates
+      set full_name = nullif(
+        trim(
+          concat_ws(
+            ' ',
+            nullif(first_name, ''),
+            nullif(last_name, '')
+          )
+        ),
+        ''
+      )
+      where full_name is null or trim(full_name) = ''
+    $sql$;
+  end if;
+end $$;
+
+update public.candidates
+set full_name = 'Unknown Candidate'
+where full_name is null or trim(full_name) = '';
+
+update public.candidates
+set resume_url = ''
+where resume_url is null;
+
+alter table public.candidates
+  alter column full_name set not null;
+
+alter table public.candidates
+  alter column resume_url set not null;
+
+alter table public.candidates
+  drop column if exists first_name,
+  drop column if exists last_name,
+  drop column if exists portfolio_url,
+  drop column if exists linkedin_url,
+  drop column if exists agreement_confirmed;
 
 create index if not exists candidates_email_idx on public.candidates (email);
 
@@ -65,83 +114,83 @@ alter table public.candidates enable row level security;
 alter table public.assessment_sessions enable row level security;
 alter table public.assessment_submissions enable row level security;
 
-drop policy if exists "Allow public candidate intake inserts"
+drop policy if exists allow_public_candidate_intake_inserts
 on public.candidates;
 
-drop policy if exists "Allow public candidate intake selects"
+drop policy if exists allow_public_candidate_intake_selects
 on public.candidates;
 
-drop policy if exists "Allow public assessment session inserts"
+drop policy if exists allow_public_assessment_session_inserts
 on public.assessment_sessions;
 
-drop policy if exists "Allow public assessment session selects"
+drop policy if exists allow_public_assessment_session_selects
 on public.assessment_sessions;
 
-drop policy if exists "Allow public assessment submission inserts"
+drop policy if exists allow_public_assessment_submission_inserts
 on public.assessment_submissions;
 
-drop policy if exists "Allow public assessment submission selects"
+drop policy if exists allow_public_assessment_submission_selects
 on public.assessment_submissions;
 
-drop policy if exists "Allow public assessment submission updates"
+drop policy if exists allow_public_assessment_submission_updates
 on public.assessment_submissions;
 
-drop policy if exists "Allow public resume uploads"
+drop policy if exists allow_public_resume_uploads
 on storage.objects;
 
-drop policy if exists "Allow public resume reads"
+drop policy if exists allow_public_resume_reads
 on storage.objects;
 
-create policy "Allow public candidate intake inserts"
+create policy allow_public_candidate_intake_inserts
 on public.candidates
 for insert
 to anon
 with check (true);
 
-create policy "Allow public candidate intake selects"
+create policy allow_public_candidate_intake_selects
 on public.candidates
 for select
 to anon
 using (true);
 
-create policy "Allow public assessment session inserts"
+create policy allow_public_assessment_session_inserts
 on public.assessment_sessions
 for insert
 to anon
 with check (true);
 
-create policy "Allow public assessment session selects"
+create policy allow_public_assessment_session_selects
 on public.assessment_sessions
 for select
 to anon
 using (true);
 
-create policy "Allow public assessment submission inserts"
+create policy allow_public_assessment_submission_inserts
 on public.assessment_submissions
 for insert
 to anon
 with check (true);
 
-create policy "Allow public assessment submission selects"
+create policy allow_public_assessment_submission_selects
 on public.assessment_submissions
 for select
 to anon
 using (true);
 
-create policy "Allow public assessment submission updates"
+create policy allow_public_assessment_submission_updates
 on public.assessment_submissions
 for update
 to anon
 using (true)
 with check (true);
 
-create policy "Allow public resume uploads"
+create policy allow_public_resume_uploads
 on storage.objects
 for insert
 to anon
 with check (bucket_id = 'resumes');
 
-create policy "Allow public resume reads"
+create policy allow_public_resume_reads
 on storage.objects
 for select
 to anon

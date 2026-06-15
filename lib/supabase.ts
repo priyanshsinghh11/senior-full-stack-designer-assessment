@@ -6,37 +6,25 @@ type Database = {
       candidates: {
         Row: {
           id: string;
-          first_name: string;
-          last_name: string;
+          full_name: string;
           email: string;
-          resume_url: string | null;
-          portfolio_url: string | null;
-          linkedin_url: string | null;
-          agreement_confirmed: boolean;
+          resume_url: string;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
-          first_name: string;
-          last_name: string;
+          full_name: string;
           email: string;
-          resume_url?: string | null;
-          portfolio_url?: string | null;
-          linkedin_url?: string | null;
-          agreement_confirmed: boolean;
+          resume_url: string;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
-          first_name?: string;
-          last_name?: string;
+          full_name?: string;
           email?: string;
-          resume_url?: string | null;
-          portfolio_url?: string | null;
-          linkedin_url?: string | null;
-          agreement_confirmed?: boolean;
+          resume_url?: string;
           created_at?: string;
           updated_at?: string;
         };
