@@ -347,19 +347,31 @@ export default function WorkspacePage() {
               objective="Redesign an Ajaia page for stronger layout, hierarchy, conversion, responsiveness, and motion."
               required
             >
-              <ExplainerVideo url={taskVideos.website} />
-              <div className="note flex flex-wrap items-center justify-between gap-3">
-                <p className="text-sm leading-6 text-[#6e6e73]">
-                  Full brief is on the guide. Source page:
-                </p>
-                <a
-                  href="https://ajaia.ai/"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex text-[14px] font-medium text-[#1d1d1f] underline underline-offset-4 decoration-[#d2d2d7] transition hover:decoration-[#1d1d1f]"
-                >
-                  https://ajaia.ai/
-                </a>
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
+                <div className="lg:w-[420px] lg:shrink-0">
+                  <ExplainerVideo url={taskVideos.website} />
+                </div>
+                <div className="note flex flex-1 flex-col">
+                  <p className="text-[13px] font-semibold text-[#1d1d1f]">
+                    About this task
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-[#6e6e73]">
+                    Redesign one Ajaia page end to end — improve the layout and
+                    section structure, sharpen the visual hierarchy and
+                    messaging, and strengthen the conversion path. Show
+                    responsive behavior for desktop and mobile, and describe the
+                    animations, hover states, and microinteractions you would
+                    use. The full brief is on the guide.
+                  </p>
+                  <a
+                    href="https://ajaia.ai/"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-auto inline-flex w-fit pt-3 text-[14px] font-medium text-[#1d1d1f] underline underline-offset-4 decoration-[#d2d2d7] transition hover:decoration-[#1d1d1f]"
+                  >
+                    Source page: https://ajaia.ai/
+                  </a>
+                </div>
               </div>
               <SubmissionFields
                 figmaLabel="Figma link"
@@ -396,12 +408,24 @@ export default function WorkspacePage() {
               objective="Design a realistic, HIPAA-ready healthcare translation flow with key screens and real-time states."
               required
             >
-              <ExplainerVideo url={taskVideos.healthcare} />
-              <div className="note">
-                <p className="text-sm leading-6 text-[#6e6e73]">
-                  Cover the patient-to-clinician journey, real-time states, and
-                  consent/audit patterns. Full brief is on the guide.
-                </p>
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
+                <div className="lg:w-[420px] lg:shrink-0">
+                  <ExplainerVideo url={taskVideos.healthcare} />
+                </div>
+                <div className="note flex flex-1 flex-col">
+                  <p className="text-[13px] font-semibold text-[#1d1d1f]">
+                    About this task
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-[#6e6e73]">
+                    Design a realistic, HIPAA-ready healthcare translation flow.
+                    Cover the journey from patient intake to translated
+                    conversation, the key screens for patient and clinician, and
+                    the real-time states — listening, translating, reviewing,
+                    and confirming. Address consent, privacy, audit trail, and
+                    accessibility for stressful environments. The full brief is
+                    on the guide.
+                  </p>
+                </div>
               </div>
               <SubmissionFields
                 figmaLabel="Figma link"
@@ -424,12 +448,31 @@ export default function WorkspacePage() {
               objective="Create a LinkedIn post and supporting B2B graphic from the AI Reality Check report."
               required
             >
-              <ExplainerVideo url={taskVideos.linkedin} />
-              <div className="note">
-                <p className="text-sm leading-6 text-[#6e6e73]">
-                  Write the post in the editor and add a supporting B2B graphic.
-                  Full brief is on the guide.
-                </p>
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-stretch">
+                <div className="lg:w-[420px] lg:shrink-0">
+                  <ExplainerVideo url={taskVideos.linkedin} />
+                </div>
+                <div className="note flex flex-1 flex-col">
+                  <p className="text-[13px] font-semibold text-[#1d1d1f]">
+                    About this task
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-[#6e6e73]">
+                    Create a LinkedIn post from the 2026 AI Reality Check report
+                    plus a supporting B2B graphic. Keep it credible, sharp, and
+                    operator-minded for executives, operators, and enterprise
+                    teams focused on real implementation. Write the copy in the
+                    editor below and attach the graphic. The full brief is on
+                    the guide.
+                  </p>
+                  <a
+                    href="https://ajaia.ai/2026-ai-reality-check-report"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-auto inline-flex w-fit pt-3 text-[14px] font-medium text-[#1d1d1f] underline underline-offset-4 decoration-[#d2d2d7] transition hover:decoration-[#1d1d1f]"
+                  >
+                    Source report: 2026 AI Reality Check Report
+                  </a>
+                </div>
               </div>
               <div className="rounded-xl bg-[#f5f5f7] p-4">
                 <div className="mb-3 flex flex-wrap gap-2">

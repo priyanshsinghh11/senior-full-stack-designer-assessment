@@ -12,7 +12,7 @@ export function ExplainerVideo({
   const embedUrl = getEmbeddableVideoUrl(url || "");
 
   return (
-    <div className="overflow-hidden rounded-xl border border-black/[0.06]">
+    <div className="max-w-md overflow-hidden rounded-xl border border-black/[0.06]">
       <div className="flex items-center gap-2 border-b border-black/[0.06] bg-[#f5f5f7] px-4 py-2.5 text-[13px] font-semibold text-[#1d1d1f]">
         <MonitorPlay className="h-4 w-4 text-[#86868b]" />
         {label}
@@ -27,12 +27,11 @@ export function ExplainerVideo({
             className="h-full w-full"
           />
         ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-white">
-            <MonitorPlay className="h-8 w-8 text-white/60" />
-            <p className="text-[13px] font-medium">Explainer video coming soon</p>
-            <p className="max-w-sm text-[12px] leading-5 text-white/55">
-              Prefer watching over reading? A short walkthrough of this task
-              will play here.
+          <div className="flex h-full flex-col items-center justify-center gap-2 px-5 text-center text-white">
+            <MonitorPlay className="h-7 w-7 text-white/60" />
+            <p className="text-[13px] font-medium">Explainer coming soon</p>
+            <p className="text-[12px] leading-5 text-white/55">
+              Prefer watching? A short walkthrough plays here.
             </p>
           </div>
         )}
