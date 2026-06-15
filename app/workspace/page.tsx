@@ -2,7 +2,6 @@
 
 import {
   CheckCircle2,
-  Clock3,
   FileUp,
   Italic,
   LinkIcon,
@@ -13,8 +12,16 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { ChangeEvent, ReactNode, useEffect, useMemo, useState } from "react";
+import { ExplainerVideo } from "@/components/explainer-video";
 import { ProgressSteps } from "@/components/progress-steps";
+import { TopBar } from "@/components/top-bar";
 import { getSupabaseClient } from "@/lib/supabase";
+
+const taskVideos = {
+  website: process.env.NEXT_PUBLIC_TASK1_VIDEO_URL || "",
+  healthcare: process.env.NEXT_PUBLIC_TASK2_VIDEO_URL || "",
+  linkedin: process.env.NEXT_PUBLIC_TASK3_VIDEO_URL || "",
+};
 
 type WorkspaceDraft = {
   websiteFigmaLink: string;
@@ -105,17 +112,6 @@ export default function WorkspacePage() {
     const interval = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(interval);
   }, []);
-
-  const timeRemaining = useMemo(() => {
-    if (!expiresAt) return "4:00:00";
-
-    const diff = Math.max(0, expiresAt.getTime() - now.getTime());
-    const hours = Math.floor(diff / 3_600_000);
-    const minutes = Math.floor((diff % 3_600_000) / 60_000);
-    const seconds = Math.floor((diff % 60_000) / 1000);
-
-    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  }, [expiresAt, now]);
 
   const isExpired = useMemo(() => {
     if (!expiresAt) return false;
@@ -286,7 +282,9 @@ export default function WorkspacePage() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
+    <>
+      <TopBar />
+      <main className="px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-5">
         <ProgressSteps currentStep="assessment" />
 
@@ -301,10 +299,6 @@ export default function WorkspacePage() {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="flex min-h-11 items-center justify-center gap-2 rounded-full bg-[#f5f5f7] px-5 text-[15px] font-semibold tabular-nums text-[#1d1d1f]">
-                <Clock3 className="h-4 w-4 text-[#86868b]" />
-                {timeRemaining}
-              </div>
               <button
                 type="button"
                 onClick={submitAssessment}
@@ -345,56 +339,27 @@ export default function WorkspacePage() {
           </div>
         ) : null}
 
-        <div className="grid gap-5 xl:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="card p-5 xl:sticky xl:top-6 xl:self-start">
-            <p className="eyebrow">Tasks</p>
-            <nav className="mt-3 space-y-2">
-              {[
-                ["task-1", "Website Redesign"],
-                ["task-2", "Product UI Flow"],
-                ["task-3", "LinkedIn B2B Asset"],
-              ].map(([href, label], index) => (
-                <a
-                  key={href}
-                  href={`#${href}`}
-                  className="flex items-center gap-3 rounded-xl bg-[#f5f5f7] px-3.5 py-2.5 text-[14px] font-medium text-[#1d1d1f] transition-all duration-200 hover:bg-[#e8e8ed]"
-                >
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-[11px] font-semibold text-[#1d1d1f] shadow-[0_1px_2px_rgba(0,0,0,0.08)]">
-                    {index + 1}
-                  </span>
-                  {label}
-                </a>
-              ))}
-            </nav>
-          </aside>
-
-          <section className="space-y-5">
+        <section className="space-y-5">
             <TaskCard
               id="task-1"
               number="1"
               title="Website Redesign"
-              objective="Redesign the AJAIA homepage to improve layout, visual hierarchy, conversion, and responsiveness. Include a written description of the animations, hover states, and microinteractions you would use."
+              objective="Redesign an Ajaia page for stronger layout, hierarchy, conversion, responsiveness, and motion."
               required
             >
-              <div className="note">
-                <p className="text-[14px] font-semibold text-[#1d1d1f]">
-                  Source page
+              <ExplainerVideo url={taskVideos.website} />
+              <div className="note flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm leading-6 text-[#6e6e73]">
+                  Full brief is on the guide. Source page:
                 </p>
                 <a
                   href="https://ajaia.ai/"
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-1 inline-flex text-[14px] font-medium text-[#1d1d1f] underline underline-offset-4 decoration-[#d2d2d7] transition hover:decoration-[#1d1d1f]"
+                  className="inline-flex text-[14px] font-medium text-[#1d1d1f] underline underline-offset-4 decoration-[#d2d2d7] transition hover:decoration-[#1d1d1f]"
                 >
                   https://ajaia.ai/
                 </a>
-                <ul className="mt-3 grid gap-2 text-sm leading-6 text-[#6e6e73] md:grid-cols-2">
-                  <li>Improve layout and section structure.</li>
-                  <li>Clarify visual hierarchy and messaging priority.</li>
-                  <li>Strengthen conversion paths and calls to action.</li>
-                  <li>Show responsive behavior for desktop and mobile.</li>
-                  <li>Describe animations, hover states, and microinteractions.</li>
-                </ul>
               </div>
               <SubmissionFields
                 figmaLabel="Figma link"
@@ -428,20 +393,15 @@ export default function WorkspacePage() {
               id="task-2"
               number="2"
               title="Product UI Flow"
-              objective="Design a user journey and key screens for a real-time, HIPAA-ready healthcare translation app."
+              objective="Design a realistic, HIPAA-ready healthcare translation flow with key screens and real-time states."
               required
             >
+              <ExplainerVideo url={taskVideos.healthcare} />
               <div className="note">
-                <p className="text-[14px] font-semibold text-[#1d1d1f]">
-                  Required deliverables
+                <p className="text-sm leading-6 text-[#6e6e73]">
+                  Cover the patient-to-clinician journey, real-time states, and
+                  consent/audit patterns. Full brief is on the guide.
                 </p>
-                <ul className="mt-3 grid gap-2 text-sm leading-6 text-[#6e6e73] md:grid-cols-2">
-                  <li>User journey from patient intake to translated conversation.</li>
-                  <li>Key screens for patient, clinician, and interpreter/AI assistance.</li>
-                  <li>Real-time translation states: listening, translating, reviewing, and confirming.</li>
-                  <li>HIPAA-ready patterns for consent, privacy, audit trail, and secure handling.</li>
-                  <li>Accessibility decisions for stressful healthcare environments.</li>
-                </ul>
               </div>
               <SubmissionFields
                 figmaLabel="Figma link"
@@ -464,14 +424,12 @@ export default function WorkspacePage() {
               objective="Create a LinkedIn post and supporting B2B graphic from the AI Reality Check report."
               required
             >
+              <ExplainerVideo url={taskVideos.linkedin} />
               <div className="note">
-                <p className="text-[14px] font-semibold text-[#1d1d1f]">
-                  Required deliverables
+                <p className="text-sm leading-6 text-[#6e6e73]">
+                  Write the post in the editor and add a supporting B2B graphic.
+                  Full brief is on the guide.
                 </p>
-                <ul className="mt-3 grid gap-2 text-sm leading-6 text-[#6e6e73] md:grid-cols-2">
-                  <li>LinkedIn post copy written in the editor below.</li>
-                  <li>Supporting B2B graphic uploaded as an image/PDF or linked from Figma.</li>
-                </ul>
               </div>
               <div className="rounded-xl bg-[#f5f5f7] p-4">
                 <div className="mb-3 flex flex-wrap gap-2">
@@ -522,7 +480,6 @@ export default function WorkspacePage() {
               </div>
             </TaskCard>
           </section>
-        </div>
       </div>
 
       {showSubmitModal ? (
@@ -567,7 +524,8 @@ export default function WorkspacePage() {
           </div>
         </div>
       ) : null}
-    </main>
+      </main>
+    </>
   );
 }
 

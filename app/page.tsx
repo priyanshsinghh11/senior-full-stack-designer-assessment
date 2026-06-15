@@ -14,6 +14,7 @@ import { ReactNode, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { ProgressSteps } from "@/components/progress-steps";
+import { TopBar } from "@/components/top-bar";
 import { getSupabaseClient } from "@/lib/supabase";
 
 const requiredUrl = z
@@ -72,14 +73,33 @@ export default function CandidateInformationPage() {
         throw new Error(candidateError.message);
       }
 
+      const startedAt = new Date();
+      const expiresAt = new Date(startedAt.getTime() + 4 * 60 * 60 * 1000);
+
+      const { data: session, error: sessionError } = await supabase
+        .from("assessment_sessions")
+        .insert({
+          candidate_id: candidate.id,
+          assessment_name: "Senior Full Stack Designer Assessment",
+          status: "started",
+          started_at: startedAt.toISOString(),
+          expires_at: expiresAt.toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (sessionError) {
+        throw new Error(sessionError.message);
+      }
+
       localStorage.setItem("assessmentCandidateId", candidate.id);
       localStorage.setItem("assessmentCandidateName", fullName);
-      localStorage.removeItem("assessmentSessionId");
-      localStorage.removeItem("assessmentStartedAt");
-      localStorage.removeItem("assessmentExpiresAt");
+      localStorage.setItem("assessmentSessionId", session.id);
+      localStorage.setItem("assessmentStartedAt", startedAt.toISOString());
+      localStorage.setItem("assessmentExpiresAt", expiresAt.toISOString());
       localStorage.removeItem("assessmentWorkspaceDraft");
       localStorage.removeItem("assessmentSubmitted");
-      setSubmitSuccess("Candidate information saved. Opening guide...");
+      setSubmitSuccess("Details saved. Your 4-hour timer has started — opening guide...");
       router.push("/guide");
     } catch (error) {
       setSubmitError(
@@ -91,7 +111,9 @@ export default function CandidateInformationPage() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
+    <>
+      <TopBar />
+      <main className="px-4 py-8 sm:px-6 lg:px-8">
       <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
         <ProgressSteps currentStep="profile" />
 
@@ -169,22 +191,22 @@ export default function CandidateInformationPage() {
 
             <div className="flex flex-col gap-3 border-t border-black/[0.06] pt-6 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-secondary-apple">
-                Only full name, email, and resume link are required.
+                Submitting starts your 4-hour assessment timer in the top bar.
               </p>
               <button
                 type="submit"
                 disabled={isSubmitting}
                 suppressHydrationWarning
-                className="game-button"
+                className="game-button rounded-xl"
               >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Saving...
+                    Starting timer...
                   </>
                 ) : (
                   <>
-                    Continue to Guide
+                    Submit & Start Timer
                     <ArrowRight className="h-4 w-4" />
                   </>
                 )}
@@ -193,7 +215,8 @@ export default function CandidateInformationPage() {
           </form>
         </section>
       </div>
-    </main>
+      </main>
+    </>
   );
 }
 

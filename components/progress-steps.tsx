@@ -40,7 +40,7 @@ export function ProgressSteps({ currentStep }: { currentStep: StepId }) {
               ) : null}
 
               <span
-                className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-semibold transition-all duration-300 ${
+                className={`relative z-10 flex h-8 w-12 items-center justify-center rounded-xl text-[12px] font-semibold transition-all duration-300 ${
                   isComplete
                     ? "bg-[#1d1d1f] text-white"
                     : isCurrent

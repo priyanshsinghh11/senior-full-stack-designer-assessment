@@ -3,18 +3,16 @@
 import {
   ArrowRight,
   CheckCircle2,
-  Clock3,
+  ClipboardList,
   FileText,
   Loader2,
-  MonitorPlay,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ProgressSteps } from "@/components/progress-steps";
-import { getSupabaseClient } from "@/lib/supabase";
-
-const guideVideoUrl = process.env.NEXT_PUBLIC_GUIDE_VIDEO_URL || "";
+import { TopBar } from "@/components/top-bar";
 
 const checklist = [
   "Keep your Figma, portfolio, and reference files ready.",
@@ -23,301 +21,399 @@ const checklist = [
   "Submit before the timer reaches zero.",
 ];
 
+type BriefSection = {
+  heading: string;
+  body?: string;
+  items?: string[];
+  link?: { label: string; href: string };
+};
+
+type Brief = {
+  number: string;
+  title: string;
+  intro: string;
+  sections: BriefSection[];
+};
+
+const briefs: Brief[] = [
+  {
+    number: "1",
+    title: "Website Redesign",
+    intro: "Choose one page from the Ajaia website and redesign it.",
+    sections: [
+      {
+        heading: "Source website",
+        link: { label: "https://ajaia.ai", href: "https://ajaia.ai" },
+      },
+      {
+        heading: "Your task",
+        body: "Redesign the page of your choice to significantly improve:",
+        items: [
+          "Visual quality",
+          "Clarity of information",
+          "Hierarchy",
+          "Conversion potential",
+          "Interaction design",
+          "Animation / motion behavior",
+        ],
+      },
+      {
+        heading: "Requirements",
+        items: [
+          "A full-page redesign",
+          "Responsive consideration",
+          "Clear animation and motion direction",
+          "A polished visual system appropriate for Ajaia's brand",
+          "Modern, production-minded design thinking",
+          "Any tool is allowed, including AI-assisted design tools",
+        ],
+      },
+      {
+        heading: "What to include",
+        items: [
+          "The original page you selected",
+          "Your redesigned version",
+          "A short explanation of why you chose that page",
+          "A short explanation of the animation / motion system",
+        ],
+      },
+    ],
+  },
+  {
+    number: "2",
+    title: "Product UI Flow",
+    intro: "Design a UI flow for the following product concept.",
+    sections: [
+      {
+        heading: "Product brief — AI Translator for Healthcare",
+        body: "Real-time, medically accurate translation that improves patient communication and clinical workflows.",
+      },
+      {
+        heading: "Outcome",
+        body: "Clear, instant communication that reduces errors and accelerates care.",
+      },
+      {
+        heading: "Top 3 pains solved",
+        items: [
+          "Misunderstandings that risk incorrect diagnosis or treatment",
+          "Delays caused by unavailable interpreters",
+          "Compliance risks from using unsecured translation tools",
+        ],
+      },
+      {
+        heading: "Core features",
+        items: [
+          "Real-time audio & text translation",
+          "HIPAA-ready, secure architecture",
+          "Cross-device access",
+          "Multi-language auto-detection",
+          "Clinical clarity filters",
+          "Workflow-optimized communication",
+        ],
+      },
+      {
+        heading: "Your task",
+        body: "Create a UI flow for this product. You may define the flow, but it should feel realistic for a healthcare setting — for example:",
+        items: [
+          "Intake or triage translation",
+          "Bedside communication",
+          "Telehealth translation",
+          "Doctor-patient conversation support",
+          "Review / export of translated interaction history",
+        ],
+      },
+      {
+        heading: "Requirements",
+        items: [
+          "Strong UX thinking",
+          "Clean information hierarchy",
+          "Trust and clarity in a healthcare context",
+          "Realistic workflow design",
+          "Thoughtful handling of speed, usability, and compliance-sensitive contexts",
+        ],
+      },
+      {
+        heading: "What to include",
+        items: [
+          "Key screens for the flow",
+          "A brief explanation of the user journey",
+          "Important states or interactions",
+          "Any assumptions you made",
+        ],
+      },
+    ],
+  },
+  {
+    number: "3",
+    title: "LinkedIn Post + Graphic",
+    intro:
+      "Create one LinkedIn post and one supporting graphic based on any idea, insight, or takeaway from the 2026 AI Reality Check Report.",
+    sections: [
+      {
+        heading: "Source report",
+        link: {
+          label: "2026 AI Reality Check Report",
+          href: "https://ajaia.ai/2026-ai-reality-check-report",
+        },
+      },
+      {
+        heading: "Your task",
+        body: "Create a LinkedIn post that feels native to Ajaia's style and audience. The post should feel:",
+        items: [
+          "Credible",
+          "Sharp",
+          "Practical",
+          "Operator-minded",
+          "AI-forward",
+          "Written for executives, operators, and enterprise teams focused on real implementation",
+        ],
+      },
+      {
+        heading: "Supporting graphic",
+        body: "The supporting graphic should be visually strong, on-brand, and appropriate for LinkedIn.",
+      },
+      {
+        heading: "What to include",
+        items: [
+          "The final LinkedIn post copy",
+          "The final graphic",
+          "A 1–2 sentence note explaining the angle you chose",
+        ],
+      },
+    ],
+  },
+];
+
+const expectations: BriefSection[] = [
+  {
+    heading: "AI-native workflow note",
+    body: "AI usage is core to this role. Add a short note covering:",
+    items: [
+      "Which AI tools you used",
+      "Where they helped most",
+      "How they sped up your process",
+      "What you refined by hand",
+      "Which decisions were yours",
+    ],
+  },
+  {
+    heading: "Walkthrough video",
+    body: "Record a short walkthrough (link goes in Task 1):",
+    items: [
+      "Your approach and time priorities",
+      "Why you made your design choices",
+      "Your animation approach on the web redesign",
+      "Usability in the healthcare flow",
+      "Ajaia's brand voice and AI usage",
+    ],
+  },
+  {
+    heading: "Deliverables",
+    body: "What to hand in by the end of the session:",
+    items: [
+      "1 redesigned Ajaia website page",
+      "1 healthcare translation UI flow",
+      "1 LinkedIn post and graphic",
+      "1 short AI workflow note",
+      "1 walkthrough video link",
+    ],
+  },
+];
+
 export default function AssessmentGuidePage() {
   const router = useRouter();
   const [candidateName, setCandidateName] = useState("Candidate");
-  const [expiresAt, setExpiresAt] = useState<Date | null>(null);
-  const [now, setNow] = useState(() => new Date());
   const [isStarting, setIsStarting] = useState(false);
   const [startError, setStartError] = useState("");
 
   useEffect(() => {
-    let isActive = true;
     const hydrationTimer = window.setTimeout(() => {
-      if (!isActive) return;
       setCandidateName(localStorage.getItem("assessmentCandidateName") || "Candidate");
-
-      const storedExpiry = localStorage.getItem("assessmentExpiresAt");
-      if (storedExpiry) {
-        setExpiresAt(new Date(storedExpiry));
-      }
     }, 0);
 
-    async function loadSessionTimer() {
-      const sessionId = localStorage.getItem("assessmentSessionId");
-      if (!sessionId) return;
-
-      const { data, error } = await getSupabaseClient()
-        .from("assessment_sessions")
-        .select("expires_at")
-        .eq("id", sessionId)
-        .single();
-
-      if (!isActive || error || !data?.expires_at) return;
-
-      localStorage.setItem("assessmentExpiresAt", data.expires_at);
-      setExpiresAt(new Date(data.expires_at));
-    }
-
-    void loadSessionTimer();
-
-    return () => {
-      isActive = false;
-      window.clearTimeout(hydrationTimer);
-    };
+    return () => window.clearTimeout(hydrationTimer);
   }, []);
 
-  useEffect(() => {
-    const interval = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(interval);
-  }, []);
-
-  const timeRemaining = useMemo(() => {
-    if (!expiresAt) return "4:00:00";
-
-    const diff = Math.max(0, expiresAt.getTime() - now.getTime());
-    const hours = Math.floor(diff / 3_600_000);
-    const minutes = Math.floor((diff % 3_600_000) / 60_000);
-    const seconds = Math.floor((diff % 60_000) / 1000);
-
-    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  }, [expiresAt, now]);
-
-  const isExpired = useMemo(() => {
-    if (!expiresAt) return false;
-    return expiresAt.getTime() <= now.getTime();
-  }, [expiresAt, now]);
-
-  const embedUrl = getEmbeddableVideoUrl(guideVideoUrl);
-
-  async function startAssessment() {
+  function enterWorkspace() {
     setStartError("");
     setIsStarting(true);
 
-    try {
-      const candidateId = localStorage.getItem("assessmentCandidateId");
-
-      if (!candidateId) {
-        throw new Error("Candidate information was not found. Please complete Page 1 again.");
-      }
-
-      const supabase = getSupabaseClient();
-      const { data: candidate, error: candidateError } = await supabase
-        .from("candidates")
-        .select("id")
-        .eq("id", candidateId)
-        .maybeSingle();
-
-      if (candidateError) {
-        throw new Error(candidateError.message);
-      }
-
-      if (!candidate) {
-        clearStoredAssessment();
-        throw new Error("Candidate information was not found in the database. Please complete Page 1 again.");
-      }
-
-      const now = new Date();
-      const expiresAt = new Date(now.getTime() + 4 * 60 * 60 * 1000);
-      const { data: session, error } = await supabase
-        .from("assessment_sessions")
-        .insert({
-          candidate_id: candidateId,
-          assessment_name: "Senior Full Stack Designer Assessment",
-          status: "started",
-          started_at: now.toISOString(),
-          expires_at: expiresAt.toISOString(),
-        })
-        .select("id")
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      localStorage.setItem("assessmentSessionId", session.id);
-      localStorage.setItem("assessmentStartedAt", now.toISOString());
-      localStorage.setItem("assessmentExpiresAt", expiresAt.toISOString());
-      localStorage.removeItem("assessmentWorkspaceDraft");
-      localStorage.removeItem("assessmentSubmitted");
-      router.push("/workspace");
-    } catch (error) {
-      setStartError(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong while starting the assessment.",
-      );
+    const sessionId = localStorage.getItem("assessmentSessionId");
+    if (!sessionId) {
+      setStartError("Your assessment session was not found. Please complete Page 1 again.");
       setIsStarting(false);
+      return;
     }
+
+    router.push("/workspace");
   }
 
   return (
-    <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
-        <ProgressSteps currentStep="guidance" />
+    <>
+      <TopBar />
+      <main className="px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
+          <ProgressSteps currentStep="guidance" />
 
-        <header className="card flex flex-col justify-between gap-4 px-6 py-6 sm:flex-row sm:items-center">
-          <div>
-            <p className="eyebrow">Assessment guide</p>
-            <h1 className="title-lg mt-2">
-              Get Ready Before You Start Working
-            </h1>
-            <p className="text-secondary-apple mt-2">{candidateName}</p>
-          </div>
-        </header>
+          <header className="card flex flex-col justify-between gap-4 px-6 py-6 sm:flex-row sm:items-center">
+            <div>
+              <p className="eyebrow">Assessment guide</p>
+              <h1 className="title-lg mt-2">Review Your Three Assessments</h1>
+              <p className="text-secondary-apple mt-2">{candidateName}</p>
+            </div>
+          </header>
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <section className="card">
             <div className="card-header">
               <div className="flex items-center gap-2 text-[15px] font-semibold text-[#1d1d1f]">
-                <MonitorPlay className="h-4 w-4 text-[#86868b]" />
-                Guide video
+                <ClipboardList className="h-4 w-4 text-[#86868b]" />
+                What you will complete
               </div>
               <p className="text-secondary-apple mt-2">
-                Watch this short walkthrough before entering the assignment
-                workspace. The timer has not started yet.
+                Your workspace contains the three required assessments below.
+                Your 4-hour timer is already running in the top bar, so read
+                each brief carefully before you enter the workspace.
               </p>
             </div>
 
-            <div className="card-body">
-              <div className="aspect-video overflow-hidden rounded-xl bg-[#1d1d1f]">
-                {embedUrl ? (
-                  <iframe
-                    src={embedUrl}
-                    title="Assessment guide video"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    className="h-full w-full"
-                  />
-                ) : (
-                  <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center text-white">
-                    <MonitorPlay className="h-10 w-10 text-white/60" />
-                    <div>
-                      <p className="text-[15px] font-semibold">
-                        Guide video placeholder
-                      </p>
-                      <p className="mt-1 max-w-md text-sm leading-6 text-white/60">
-                        Add `NEXT_PUBLIC_GUIDE_VIDEO_URL` in `.env.local` with a
-                        YouTube, Loom, or Vimeo link to embed the video here.
-                      </p>
+            <div className="card-body space-y-5">
+              {briefs.map((brief) => (
+                <article key={brief.number} className="note">
+                  <div className="flex gap-4">
+                    <span className="flex h-8 w-12 shrink-0 items-center justify-center rounded-xl bg-[#1d1d1f] text-[13px] font-semibold text-white">
+                      {brief.number}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        <h2 className="title-md">{brief.title}</h2>
+                        <span className="rounded-full bg-white px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.04em] text-[#6e6e73]">
+                          Required
+                        </span>
+                      </div>
+                      <p className="text-secondary-apple mt-1">{brief.intro}</p>
+
+                      <div className="mt-4 space-y-4">
+                        {brief.sections.map((section) => (
+                          <BriefBlock key={section.heading} section={section} />
+                        ))}
+                      </div>
                     </div>
                   </div>
-                )}
-              </div>
-            </div>
-
-            <div className="border-t border-black/[0.06] p-6">
-              <div
-                className={`flex flex-col justify-between gap-3 rounded-xl bg-[#f5f5f7] px-5 py-4 sm:flex-row sm:items-center ${
-                  isExpired ? "text-[#d70015]" : "text-[#1d1d1f]"
-                }`}
-              >
-                <div>
-                  <div className="flex items-center gap-2 text-[14px] font-semibold">
-                    <Clock3 className="h-4 w-4" />
-                    Assessment timer
-                  </div>
-                  <p className="mt-1 text-[13px] text-[#6e6e73]">
-                  The countdown starts only after you click Start Assessment below.
-                  </p>
-                </div>
-                <div className="text-[28px] font-semibold tabular-nums tracking-[-0.02em]">
-                  {timeRemaining}
-                </div>
-              </div>
+                </article>
+              ))}
             </div>
           </section>
 
-          <aside className="space-y-5">
-            <section className="card p-6">
-              <div className="flex items-center gap-2 text-[15px] font-semibold text-[#1d1d1f]">
-                <ShieldCheck className="h-4 w-4 text-[#86868b]" />
-                Readiness checklist
-              </div>
-              <ul className="mt-4 space-y-3">
-                {checklist.map((item) => (
-                  <li key={item} className="flex gap-3 text-sm leading-6 text-[#6e6e73]">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#1d1d1f]" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </section>
+          <section className="card p-6">
+            <div className="flex items-center gap-2 text-[15px] font-semibold text-[#1d1d1f]">
+              <ShieldCheck className="h-4 w-4 text-[#86868b]" />
+              Readiness checklist
+            </div>
+            <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {checklist.map((item) => (
+                <li key={item} className="flex gap-3 text-sm leading-6 text-[#6e6e73]">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#1d1d1f]" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </section>
 
-            <section className="card p-6">
+          <section className="card p-6">
+            <div className="flex items-center gap-2 text-[15px] font-semibold text-[#1d1d1f]">
+              <Sparkles className="h-4 w-4 text-[#86868b]" />
+              Expectations &amp; deliverables
+            </div>
+            <p className="text-secondary-apple mt-2">
+              We evaluate how effectively you used AI — not whether you avoided
+              it.
+            </p>
+            <div className="mt-5 grid gap-6 lg:grid-cols-3">
+              {expectations.map((section) => (
+                <BriefBlock key={section.heading} section={section} dense />
+              ))}
+            </div>
+          </section>
+
+          <section className="card flex flex-col gap-4 px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
               <div className="flex items-center gap-2 text-[15px] font-semibold text-[#1d1d1f]">
                 <FileText className="h-4 w-4 text-[#86868b]" />
                 Next screen
               </div>
               <p className="text-secondary-apple mt-2">
-                The workspace contains three assessment tasks, file/link
-                fields, and final submission validation.
+                Submit each task directly in the workspace using the Figma link,
+                file upload, and explanation fields.
               </p>
               {startError ? (
                 <p className="mt-3 rounded-xl bg-[#f5f5f7] px-4 py-3 text-[13px] font-medium text-[#d70015]">
                   {startError}
                 </p>
               ) : null}
-              <button
-                type="button"
-                onClick={startAssessment}
-                disabled={isStarting}
-                suppressHydrationWarning
-                className="game-button mt-5 w-full"
-              >
-                {isStarting ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Starting...
-                  </>
-                ) : (
-                  <>
-                    Start Assessment
-                    <ArrowRight className="h-4 w-4" />
-                  </>
-                )}
-              </button>
-            </section>
-          </aside>
+            </div>
+            <button
+              type="button"
+              onClick={enterWorkspace}
+              disabled={isStarting}
+              suppressHydrationWarning
+              className="game-button shrink-0"
+            >
+              {isStarting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Opening...
+                </>
+              ) : (
+                <>
+                  Enter Assessment Workspace
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </button>
+          </section>
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }
 
-function clearStoredAssessment() {
-  localStorage.removeItem("assessmentCandidateId");
-  localStorage.removeItem("assessmentCandidateName");
-  localStorage.removeItem("assessmentSessionId");
-  localStorage.removeItem("assessmentStartedAt");
-  localStorage.removeItem("assessmentExpiresAt");
-  localStorage.removeItem("assessmentWorkspaceDraft");
-  localStorage.removeItem("assessmentSubmitted");
-}
-
-function getEmbeddableVideoUrl(value: string) {
-  if (!value) return "";
-
-  try {
-    const url = new URL(value);
-
-    if (url.hostname.includes("youtube.com")) {
-      const videoId = url.searchParams.get("v");
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : value;
-    }
-
-    if (url.hostname.includes("youtu.be")) {
-      const videoId = url.pathname.replace("/", "");
-      return videoId ? `https://www.youtube.com/embed/${videoId}` : value;
-    }
-
-    if (url.hostname.includes("vimeo.com")) {
-      const videoId = url.pathname.split("/").filter(Boolean).at(0);
-      return videoId ? `https://player.vimeo.com/video/${videoId}` : value;
-    }
-
-    return value;
-  } catch {
-    return "";
-  }
+function BriefBlock({
+  section,
+  dense = false,
+}: {
+  section: BriefSection;
+  dense?: boolean;
+}) {
+  return (
+    <div>
+      <p className="text-[13px] font-semibold text-[#1d1d1f]">{section.heading}</p>
+      {section.body ? (
+        <p className="mt-1 text-sm leading-6 text-[#6e6e73]">{section.body}</p>
+      ) : null}
+      {section.link ? (
+        <a
+          href={section.link.href}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-1 inline-flex text-[14px] font-medium text-[#1d1d1f] underline underline-offset-4 decoration-[#d2d2d7] transition hover:decoration-[#1d1d1f]"
+        >
+          {section.link.label}
+        </a>
+      ) : null}
+      {section.items ? (
+        <ul
+          className={`mt-2 grid gap-1.5 text-sm leading-6 text-[#6e6e73] ${
+            dense ? "" : "md:grid-cols-2"
+          }`}
+        >
+          {section.items.map((item) => (
+            <li key={item} className="flex gap-2">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#1d1d1f]" />
+              {item}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
 }
