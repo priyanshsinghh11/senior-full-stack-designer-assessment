@@ -73,33 +73,14 @@ export default function CandidateInformationPage() {
         throw new Error(candidateError.message);
       }
 
-      const startedAt = new Date();
-      const expiresAt = new Date(startedAt.getTime() + 4 * 60 * 60 * 1000);
-
-      const { data: session, error: sessionError } = await supabase
-        .from("assessment_sessions")
-        .insert({
-          candidate_id: candidate.id,
-          assessment_name: "Senior Full Stack Designer Assessment",
-          status: "started",
-          started_at: startedAt.toISOString(),
-          expires_at: expiresAt.toISOString(),
-        })
-        .select("id")
-        .single();
-
-      if (sessionError) {
-        throw new Error(sessionError.message);
-      }
-
       localStorage.setItem("assessmentCandidateId", candidate.id);
       localStorage.setItem("assessmentCandidateName", fullName);
-      localStorage.setItem("assessmentSessionId", session.id);
-      localStorage.setItem("assessmentStartedAt", startedAt.toISOString());
-      localStorage.setItem("assessmentExpiresAt", expiresAt.toISOString());
+      localStorage.removeItem("assessmentSessionId");
+      localStorage.removeItem("assessmentStartedAt");
+      localStorage.removeItem("assessmentExpiresAt");
       localStorage.removeItem("assessmentWorkspaceDraft");
       localStorage.removeItem("assessmentSubmitted");
-      setSubmitSuccess("Details saved. Your 4-hour timer has started — opening guide...");
+      setSubmitSuccess("Candidate information saved. Opening guide...");
       router.push("/guide");
     } catch (error) {
       setSubmitError(
@@ -191,7 +172,8 @@ export default function CandidateInformationPage() {
 
             <div className="flex flex-col gap-3 border-t border-black/[0.06] pt-6 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-secondary-apple">
-                Submitting starts your 4-hour assessment timer in the top bar.
+                Your 4-hour timer starts later, when you enter the workspace —
+                not now.
               </p>
               <button
                 type="submit"
@@ -202,11 +184,11 @@ export default function CandidateInformationPage() {
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Starting timer...
+                    Saving...
                   </>
                 ) : (
                   <>
-                    Submit & Start Timer
+                    Continue to Guide
                     <ArrowRight className="h-4 w-4" />
                   </>
                 )}

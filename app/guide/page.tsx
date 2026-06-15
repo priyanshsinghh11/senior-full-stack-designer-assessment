@@ -4,6 +4,7 @@ import {
   ArrowRight,
   CheckCircle2,
   ClipboardList,
+  Clock3,
   FileText,
   Loader2,
   ShieldCheck,
@@ -13,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ProgressSteps } from "@/components/progress-steps";
 import { TopBar } from "@/components/top-bar";
+import { getSupabaseClient } from "@/lib/supabase";
 
 const checklist = [
   "Keep your Figma, portfolio, and reference files ready.",
@@ -234,18 +236,56 @@ export default function AssessmentGuidePage() {
     return () => window.clearTimeout(hydrationTimer);
   }, []);
 
-  function enterWorkspace() {
+  async function enterWorkspace() {
     setStartError("");
     setIsStarting(true);
 
-    const sessionId = localStorage.getItem("assessmentSessionId");
-    if (!sessionId) {
-      setStartError("Your assessment session was not found. Please complete Page 1 again.");
-      setIsStarting(false);
-      return;
-    }
+    try {
+      const candidateId = localStorage.getItem("assessmentCandidateId");
+      if (!candidateId) {
+        throw new Error("Candidate information was not found. Please complete Page 1 again.");
+      }
 
-    router.push("/workspace");
+      const supabase = getSupabaseClient();
+
+      // Reuse an existing session if the candidate navigated back to the guide.
+      const existingSessionId = localStorage.getItem("assessmentSessionId");
+      if (!existingSessionId) {
+        const startedAt = new Date();
+        const expiresAt = new Date(startedAt.getTime() + 4 * 60 * 60 * 1000);
+
+        const { data: session, error } = await supabase
+          .from("assessment_sessions")
+          .insert({
+            candidate_id: candidateId,
+            assessment_name: "Senior Full Stack Designer Assessment",
+            status: "started",
+            started_at: startedAt.toISOString(),
+            expires_at: expiresAt.toISOString(),
+          })
+          .select("id")
+          .single();
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        localStorage.setItem("assessmentSessionId", session.id);
+        localStorage.setItem("assessmentStartedAt", startedAt.toISOString());
+        localStorage.setItem("assessmentExpiresAt", expiresAt.toISOString());
+        localStorage.removeItem("assessmentWorkspaceDraft");
+        localStorage.removeItem("assessmentSubmitted");
+      }
+
+      router.push("/workspace");
+    } catch (error) {
+      setStartError(
+        error instanceof Error
+          ? error.message
+          : "Something went wrong while starting the assessment.",
+      );
+      setIsStarting(false);
+    }
   }
 
   return (
@@ -269,11 +309,21 @@ export default function AssessmentGuidePage() {
                 <ClipboardList className="h-4 w-4 text-[#86868b]" />
                 What you will complete
               </div>
-              <p className="text-secondary-apple mt-2">
-                Your workspace contains the three required assessments below.
-                Your 4-hour timer is already running in the top bar, so read
-                each brief carefully before you enter the workspace.
-              </p>
+              <div className="mt-3 flex items-start gap-3 rounded-xl bg-[#1d1d1f] px-5 py-4 text-white">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10">
+                  <Clock3 className="h-5 w-5" />
+                </span>
+                <div>
+                  <p className="text-[15px] font-semibold">
+                    This is a timed, 4-hour assessment
+                  </p>
+                  <p className="mt-1 text-[13px] leading-5 text-white/70">
+                    The countdown has not started yet. Read all three briefs
+                    below and plan your approach — your 4-hour timer starts only
+                    when you enter the workspace.
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="card-body space-y-5">
@@ -342,8 +392,9 @@ export default function AssessmentGuidePage() {
                 Next screen
               </div>
               <p className="text-secondary-apple mt-2">
-                Submit each task directly in the workspace using the Figma link,
-                file upload, and explanation fields.
+                Entering the workspace starts your 4-hour timer. Submit each
+                task there using the Figma link, file upload, and explanation
+                fields.
               </p>
               {startError ? (
                 <p className="mt-3 rounded-xl bg-[#f5f5f7] px-4 py-3 text-[13px] font-medium text-[#d70015]">
@@ -351,25 +402,31 @@ export default function AssessmentGuidePage() {
                 </p>
               ) : null}
             </div>
-            <button
-              type="button"
-              onClick={enterWorkspace}
-              disabled={isStarting}
-              suppressHydrationWarning
-              className="game-button shrink-0"
-            >
-              {isStarting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Opening...
-                </>
-              ) : (
-                <>
-                  Enter Assessment Workspace
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              )}
-            </button>
+            <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff0e8] px-3 py-1 text-[12px] font-semibold text-[#b8500f] ring-1 ring-[#f3c9b0]">
+                <Clock3 className="h-3.5 w-3.5" />
+                Clicking starts your 4-hour timer
+              </span>
+              <button
+                type="button"
+                onClick={enterWorkspace}
+                disabled={isStarting}
+                suppressHydrationWarning
+                className="game-button"
+              >
+                {isStarting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Opening...
+                  </>
+                ) : (
+                  <>
+                    Enter Assessment Workspace
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </div>
           </section>
         </div>
       </main>
