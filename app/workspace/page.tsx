@@ -28,12 +28,15 @@ const taskVideos = {
 type WorkspaceDraft = {
   websiteFigmaLink: string;
   websiteFileName: string;
+  websiteFileId: string;
   websiteExplanation: string;
   healthcareFigmaLink: string;
   healthcareFileName: string;
+  healthcareFileId: string;
   healthcareExplanation: string;
   linkedinPost: string;
   marketingFileName: string;
+  marketingFileId: string;
   marketingFigmaLink: string;
   videoUrl: string;
 };
@@ -41,12 +44,15 @@ type WorkspaceDraft = {
 const emptyDraft: WorkspaceDraft = {
   websiteFigmaLink: "",
   websiteFileName: "",
+  websiteFileId: "",
   websiteExplanation: "",
   healthcareFigmaLink: "",
   healthcareFileName: "",
+  healthcareFileId: "",
   healthcareExplanation: "",
   linkedinPost: "",
   marketingFileName: "",
+  marketingFileId: "",
   marketingFigmaLink: "",
   videoUrl: "",
 };
@@ -60,6 +66,7 @@ export default function WorkspacePage() {
   const [candidateName, setCandidateName] = useState("Candidate");
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
   const [draft, setDraft] = useState<WorkspaceDraft>(emptyDraft);
+  const [fileIds, setFileIds] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
@@ -197,10 +204,35 @@ export default function WorkspacePage() {
     });
   }
 
-  function handleFile(field: keyof WorkspaceDraft, event: ChangeEvent<HTMLInputElement>) {
+  async function handleFile(field: keyof WorkspaceDraft, event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    const form = new FormData();
+    form.append("file", file);
+
+    const response = await fetch("/api/uploads", { method: "POST", body: form });
+    const data = (await response.json()) as {
+      fileId?: string;
+      error?: string;
+    };
+
+    if (!response.ok || !data.fileId) {
+      setErrors((current) => ({
+        ...current,
+        [field]: data.error || "Upload failed.",
+      }));
+      event.target.value = "";
+      return;
+    }
+
     updateDraft(field, file.name);
+    setFileIds((previous) => ({ ...previous, [field]: data.fileId ?? "" }));
+
+    const fileIdField = getFileIdField(field);
+    if (fileIdField) {
+      updateDraft(fileIdField, data.fileId);
+    }
   }
 
   function insertFormatting(prefix: string, suffix = prefix) {
@@ -270,10 +302,17 @@ export default function WorkspacePage() {
         throw new Error("Candidate or assessment session was not found. Please start again.");
       }
 
+      const draftWithFileIds = {
+        ...draft,
+        websiteFileId: fileIds.websiteFileName ?? draft.websiteFileId,
+        healthcareFileId: fileIds.healthcareFileName ?? draft.healthcareFileId,
+        marketingFileId: fileIds.marketingFileName ?? draft.marketingFileId,
+      };
+
       const response = await fetch("/api/assessment-submissions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ candidateId, sessionId, draft }),
+        body: JSON.stringify({ candidateId, sessionId, draft: draftWithFileIds }),
       });
 
       const submission = (await response.json()) as {
@@ -428,6 +467,7 @@ export default function WorkspacePage() {
                   fileName={draft.websiteFileName}
                   explanationValue={draft.websiteExplanation}
                   figmaError={errors.websiteFigmaLink}
+                  fileError={errors.websiteFileName}
                   explanationError={errors.websiteExplanation}
                   onFigmaChange={(value) => updateDraft("websiteFigmaLink", value)}
                   onFileChange={(event) => handleFile("websiteFileName", event)}
@@ -479,6 +519,7 @@ export default function WorkspacePage() {
                   fileName={draft.healthcareFileName}
                   explanationValue={draft.healthcareExplanation}
                   figmaError={errors.healthcareFigmaLink}
+                  fileError={errors.healthcareFileName}
                   explanationError={errors.healthcareExplanation}
                   onFigmaChange={(value) => updateDraft("healthcareFigmaLink", value)}
                   onFileChange={(event) => handleFile("healthcareFileName", event)}
@@ -549,7 +590,7 @@ export default function WorkspacePage() {
                     fileName={draft.marketingFileName}
                     onChange={(event) => handleFile("marketingFileName", event)}
                     disabled={workspaceLocked}
-                    error={errors.marketingFigmaLink}
+                    error={errors.marketingFileName ?? errors.marketingFigmaLink}
                   />
                   <Field label="Graphic Figma link" error={errors.marketingFigmaLink} hint="Upload a file or paste a link.">
                     <div className="relative">
@@ -670,6 +711,13 @@ function isAcceptedVideoUrl(value: string) {
   }
 }
 
+function getFileIdField(field: keyof WorkspaceDraft) {
+  if (field === "websiteFileName") return "websiteFileId";
+  if (field === "healthcareFileName") return "healthcareFileId";
+  if (field === "marketingFileName") return "marketingFileId";
+  return null;
+}
+
 function TaskCard({
   id,
   number,
@@ -716,6 +764,7 @@ function SubmissionFields({
   fileName,
   explanationValue,
   figmaError,
+  fileError,
   explanationError,
   onFigmaChange,
   onFileChange,
@@ -727,6 +776,7 @@ function SubmissionFields({
   fileName: string;
   explanationValue: string;
   figmaError?: string;
+  fileError?: string;
   explanationError?: string;
   onFigmaChange: (value: string) => void;
   onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
@@ -754,6 +804,7 @@ function SubmissionFields({
           fileName={fileName}
           onChange={onFileChange}
           disabled={disabled}
+          error={fileError}
         />
       </div>
       <Field label="Design explanation" error={explanationError}>
