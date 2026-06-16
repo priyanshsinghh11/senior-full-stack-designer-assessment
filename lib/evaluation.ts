@@ -20,6 +20,10 @@ const scorecardSchema = z.object({
     .min(1),
   overall_score: z.coerce.number().min(1).max(10),
   summary: z.string(),
+  score_explanation: z.string(),
+  strengths: z.array(z.string()).default([]),
+  concerns: z.array(z.string()).default([]),
+  manual_review_flags: z.array(z.string()).default([]),
   recommendation: z.enum(["strong_yes", "yes", "maybe", "no"]),
   skipped_files: z
     .array(
@@ -158,6 +162,10 @@ export async function evaluateSubmission(sessionId: string) {
           evaluation_overall_score: scorecard.overall_score,
           evaluation_recommendation: scorecard.recommendation,
           evaluation_summary: scorecard.summary,
+          evaluation_score_explanation: scorecard.score_explanation,
+          evaluation_strengths: scorecard.strengths,
+          evaluation_concerns: scorecard.concerns,
+          evaluation_manual_review_flags: scorecard.manual_review_flags,
           evaluated_at: evaluatedAt,
           updated_at: evaluatedAt,
         },
@@ -366,6 +374,10 @@ Return only JSON with this exact shape:
   ],
   "overall_score": 1,
   "summary": "short hiring-review summary",
+  "score_explanation": "clear paragraph explaining why the overall score was assigned, citing the strongest and weakest evidence",
+  "strengths": ["specific strength visible in the submission"],
+  "concerns": ["specific concern or missing evidence"],
+  "manual_review_flags": ["anything a human reviewer should double-check"],
   "recommendation": "strong_yes | yes | maybe | no",
   "skipped_files": [
     { "label": "file label", "reason": "why it was not evaluated" }
@@ -416,6 +428,7 @@ Important:
 - If a visual file is attached, use it as evidence in the relevant dimension notes.
 - If a task only has a Figma link and no attached image, evaluate the written reasoning but note that the visual artifact was not directly visible.
 - Keep notes concise and specific.
+- The score_explanation must make it easy for a human reviewer to understand why the candidate received the overall_score.
 `;
 }
 

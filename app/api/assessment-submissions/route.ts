@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { evaluateSubmission } from "@/lib/evaluation";
 import { getMongoDb } from "@/lib/mongodb";
 
 const draftSchema = z.object({
@@ -101,6 +102,10 @@ export async function POST(request: Request) {
         },
       },
     );
+
+    void evaluateSubmission(values.sessionId).catch((error) => {
+      console.error("Automatic evaluation failed:", error);
+    });
 
     return NextResponse.json({ submitted_at: submittedAt.toISOString() });
   } catch (error) {
