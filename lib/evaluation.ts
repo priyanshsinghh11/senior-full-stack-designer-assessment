@@ -1,261 +1,434 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { GridFSBucket, ObjectId } from "mongodb";
+import Groq from "groq-sdk";
+import { GridFSBucket, ObjectId, type Db } from "mongodb";
+import { z } from "zod";
 import { getMongoDb } from "@/lib/mongodb";
 
-// Rubric dimensions — mirrors the assessment's "What We Will Evaluate" list.
-// Each is graded out of 10 by a deliberately strict examiner.
-const RUBRIC = [
-  { key: "visual_design", label: "Strength of visual design and craft" },
-  { key: "hierarchy_layout", label: "Quality of hierarchy and layout" },
-  { key: "website_conversion", label: "Website thinking and conversion awareness" },
-  { key: "motion_interaction", label: "Motion and interaction design judgment" },
-  { key: "product_ux", label: "UX quality in the healthcare product flow" },
-  { key: "healthcare_trust", label: "Clarity and trustworthiness of the healthcare UI" },
-  { key: "consistency", label: "Consistency across product, web, and brand surfaces" },
-  { key: "linkedin_quality", label: "Quality of the LinkedIn content and graphic" },
-  { key: "ai_workflow", label: "AI-native workflow maturity" },
-] as const;
+const GROQ_MODEL =
+  process.env.GROQ_EVALUATION_MODEL ||
+  "meta-llama/llama-4-scout-17b-16e-instruct";
+const MAX_EVAL_IMAGE_BYTES = 4 * 1024 * 1024;
 
-const MODEL = "claude-opus-4-8";
-const SCORE_1_TO_10 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const scorecardSchema = z.object({
+  dimensions: z
+    .array(
+      z.object({
+        name: z.string(),
+        score: z.coerce.number().min(1).max(10),
+        note: z.string(),
+      }),
+    )
+    .min(1),
+  overall_score: z.coerce.number().min(1).max(10),
+  summary: z.string(),
+  recommendation: z.enum(["strong_yes", "yes", "maybe", "no"]),
+  skipped_files: z
+    .array(
+      z.object({
+        label: z.string(),
+        reason: z.string(),
+      }),
+    )
+    .default([]),
+});
 
-function buildInputSchema(): Anthropic.Tool.InputSchema {
-  const dimensionProps: Record<string, unknown> = {};
-  for (const d of RUBRIC) {
-    dimensionProps[d.key] = {
-      type: "object",
-      description: d.label,
-      properties: {
-        score: {
-          type: "integer",
-          enum: SCORE_1_TO_10,
-          description: "Strict score out of 10. Be harsh; see the grading bands.",
-        },
-        critique: {
-          type: "string",
-          description:
-            "Blunt, specific critique justifying the score: what is wrong, what is missing, what would a top candidate have done.",
-        },
-      },
-      required: ["score", "critique"],
-      additionalProperties: false,
-    };
-  }
+export type EvaluationScorecard = z.infer<typeof scorecardSchema>;
 
-  return {
-    type: "object",
-    properties: {
-      dimensions: {
-        type: "object",
-        properties: dimensionProps,
-        required: RUBRIC.map((d) => d.key),
-        additionalProperties: false,
-      },
-      overall_score: {
-        type: "integer",
-        enum: SCORE_1_TO_10,
-        description: "Overall strict score out of 10 for the whole submission.",
-      },
-      strengths: {
-        type: "array",
-        items: { type: "string" },
-        description: "Genuine strengths only. Leave empty if there are none.",
-      },
-      weaknesses: {
-        type: "array",
-        items: { type: "string" },
-        description: "The concrete problems that held the score down.",
-      },
-      verdict: {
-        type: "string",
-        description:
-          "2-4 sentence final verdict in the voice of a strict examiner. No flattery.",
-      },
-      recommendation: {
-        type: "string",
-        enum: ["strong_hire", "hire", "borderline", "no_hire"],
-        description: "Hiring recommendation based strictly on the evidence.",
-      },
-    },
-    required: [
-      "dimensions",
-      "overall_score",
-      "strengths",
-      "weaknesses",
-      "verdict",
-      "recommendation",
-    ],
-    additionalProperties: false,
-  } as Anthropic.Tool.InputSchema;
-}
+type SubmissionDocument = {
+  candidate_id?: string;
+  assessment_session_id: string;
+  website_figma_link?: string | null;
+  website_file_name?: string | null;
+  website_file_id?: string | null;
+  website_explanation?: string | null;
+  website_walkthrough_url?: string | null;
+  healthcare_figma_link?: string | null;
+  healthcare_file_name?: string | null;
+  healthcare_file_id?: string | null;
+  healthcare_explanation?: string | null;
+  linkedin_post?: string | null;
+  linkedin_graphic_file_name?: string | null;
+  linkedin_graphic_file_id?: string | null;
+  linkedin_graphic_figma_link?: string | null;
+};
 
-const STRICT_EXAMINER_SYSTEM = `You are an extremely strict, demanding senior design examiner grading a Senior Full-Stack Designer assessment. You grade like the hardest professor a candidate has ever had — exacting, unsentimental, and impossible to impress with polish alone.
+type StoredUpload = {
+  id: string;
+  label: string;
+  filename: string;
+  contentType: string;
+  buffer: Buffer;
+};
 
-Hard rules:
-- Score every dimension and the overall out of 10, where 10 is reserved for truly exceptional, portfolio-defining, production-ready work that you would be unable to improve. Almost no real submission earns it.
-- Default to skepticism. Most submissions are mediocre and should land in the 3-5 range. Award 6-7 only for genuinely strong, considered work, and 8+ only for outstanding work backed by concrete evidence.
-- Grade what is ACTUALLY in front of you. If a deliverable is only a link you cannot open, or a design file is missing, treat that dimension as largely unproven and score it low (1-3) — never give credit for work you cannot see.
-- Weight the actual uploaded design files most heavily. Vague written explanations without strong visual work do not earn high marks. A confident write-up cannot rescue weak or absent design files.
-- Be specific and blunt in every critique: name the exact flaws (hierarchy, spacing, contrast, typography, conversion logic, accessibility, HIPAA/clinical-trust gaps, motion judgment, brand fit) and state what a top candidate would have done instead.
-- Do not inflate scores to be kind. Do not hedge. Do not pad with praise.
+type SkippedFile = {
+  label: string;
+  reason: string;
+};
 
-When finished, call submit_grade with the strict scorecard.`;
+const rubricDimensions = [
+  "Website visual hierarchy, clarity, and polish",
+  "Website conversion thinking and responsive design",
+  "Website interaction and motion direction",
+  "Healthcare product flow, key screens, and states",
+  "Healthcare clinical clarity, accessibility, and HIPAA-ready thinking",
+  "LinkedIn post quality, audience fit, and operator-minded point of view",
+  "LinkedIn supporting graphic quality and B2B clarity",
+  "Written reasoning, assumptions, and decision quality",
+  "Overall senior full stack design judgment",
+];
 
-/**
- * Strictly grade one submission with Claude, acting as a harsh examiner.
- * Reads the candidate's text answers + uploaded design files from
- * MongoDB/GridFS, sends both to the model, scores everything out of 10,
- * and saves the scorecard to `assessment_evaluations`.
- */
 export async function evaluateSubmission(sessionId: string) {
-  if (!ObjectId.isValid(sessionId)) {
-    throw new Error("A valid assessment session id is required.");
+  const cleanSessionId = sessionId.trim();
+
+  if (!cleanSessionId) {
+    throw new Error("sessionId is required.");
   }
 
   const db = await getMongoDb();
-  const submission = await db
-    .collection("assessment_submissions")
-    .findOne({ assessment_session_id: sessionId });
-
-  if (!submission) {
-    throw new Error("No submission found for this session.");
-  }
-
-  // 1. The text the examiner reads.
-  const textParts = [
-    "Grade this candidate's Senior Full-Stack Designer assessment submission strictly.",
-    "Score every dimension and the overall out of 10. Grade only what is present.",
-    "The uploaded design files matter most — weigh them above the written text.",
-    "",
-    "=== TASK 1 — Website Redesign ===",
-    `Figma link (you cannot open links): ${submission.website_figma_link || "(none)"}`,
-    `Walkthrough URL (you cannot open links): ${submission.website_walkthrough_url || "(none)"}`,
-    `Explanation: ${submission.website_explanation || "(none provided)"}`,
-    "",
-    "=== TASK 2 — Healthcare Product UI Flow ===",
-    `Figma link (you cannot open links): ${submission.healthcare_figma_link || "(none)"}`,
-    `Explanation: ${submission.healthcare_explanation || "(none provided)"}`,
-    "",
-    "=== TASK 3 — LinkedIn B2B Asset ===",
-    `Figma link (you cannot open links): ${submission.linkedin_graphic_figma_link || "(none)"}`,
-    `LinkedIn post:\n${submission.linkedin_post || "(none provided)"}`,
-    "",
-    submission.ai_workflow_note
-      ? `=== AI workflow note ===\n${submission.ai_workflow_note}`
-      : "",
-    "",
-    "The attached image/PDF files below are the candidate's actual design deliverables. Judge them rigorously, then call submit_grade.",
-  ];
-
-  const content: Anthropic.ContentBlockParam[] = [
-    { type: "text", text: textParts.filter(Boolean).join("\n") },
-  ];
-
-  // 2. Attach each uploaded design file from GridFS (image or PDF).
-  const files = [
-    {
-      task: "Task 1 — Website Redesign design",
-      fileId: submission.website_file_id as string | null | undefined,
-      fileName: submission.website_file_name as string | null | undefined,
-    },
-    {
-      task: "Task 2 — Healthcare UI flow design",
-      fileId: submission.healthcare_file_id as string | null | undefined,
-      fileName: submission.healthcare_file_name as string | null | undefined,
-    },
-    {
-      task: "Task 3 — LinkedIn graphic",
-      fileId: submission.linkedin_graphic_file_id as string | null | undefined,
-      fileName: submission.linkedin_graphic_file_name as string | null | undefined,
-    },
-  ].filter(
-    (f): f is { task: string; fileId: string; fileName: string | null | undefined } =>
-      typeof f.fileId === "string" && ObjectId.isValid(f.fileId),
-  );
-
-  const bucket = new GridFSBucket(db, { bucketName: "uploads" });
-
-  for (const f of files) {
-    const _id = new ObjectId(f.fileId);
-    const meta = await db.collection("uploads.files").findOne({ _id });
-    if (!meta) continue;
-
-    const chunks: Buffer[] = [];
-    for await (const chunk of bucket.openDownloadStream(_id)) {
-      chunks.push(chunk as Buffer);
-    }
-    const data = Buffer.concat(chunks).toString("base64");
-    const contentType =
-      (meta.metadata as { contentType?: string } | undefined)?.contentType ||
-      (meta.contentType as string | undefined) ||
-      "";
-
-    content.push({
-      type: "text",
-      text: `\n[Candidate's design file for ${f.task}: ${f.fileName || meta.filename}]`,
-    });
-
-    if (contentType === "application/pdf") {
-      content.push({
-        type: "document",
-        source: { type: "base64", media_type: "application/pdf", data },
-      });
-    } else if (contentType === "image/png" || contentType === "image/jpeg") {
-      content.push({
-        type: "image",
-        source: { type: "base64", media_type: contentType, data },
-      });
-    }
-  }
-
-  // 3. Call Claude, forcing the strict structured grade.
-  const client = new Anthropic(); // reads ANTHROPIC_API_KEY from the environment
-
-  const response = await client.messages.create({
-    model: MODEL,
-    max_tokens: 4000,
-    system: STRICT_EXAMINER_SYSTEM,
-    tools: [
-      {
-        name: "submit_grade",
-        description: "Submit the strict out-of-10 scorecard for this submission.",
-        input_schema: buildInputSchema(),
-      },
-    ],
-    tool_choice: { type: "tool", name: "submit_grade" },
-    messages: [{ role: "user", content }],
-  });
-
-  const toolUse = response.content.find(
-    (block): block is Anthropic.ToolUseBlock => block.type === "tool_use",
-  );
-
-  if (!toolUse) {
-    throw new Error("The examiner did not return a structured grade.");
-  }
-
-  const scorecard = toolUse.input;
-
-  // 4. Persist the scorecard.
   const now = new Date();
-  await db.collection("assessment_evaluations").updateOne(
-    { assessment_session_id: sessionId },
+
+  await db.collection("assessment_submissions").updateOne(
+    { assessment_session_id: cleanSessionId },
     {
       $set: {
-        assessment_session_id: sessionId,
-        candidate_id: submission.candidate_id,
-        model: MODEL,
-        grading_style: "strict_examiner_out_of_10",
-        graded_files: files.map((f) => ({ task: f.task, fileId: f.fileId })),
-        scorecard,
-        evaluation_status: "done",
-        evaluated_at: now,
+        evaluation_status: "processing",
+        evaluation_started_at: now,
         updated_at: now,
       },
-      $setOnInsert: { created_at: now },
     },
-    { upsert: true },
   );
 
-  return scorecard;
+  try {
+    const submission =
+      await db.collection<SubmissionDocument>("assessment_submissions").findOne({
+        assessment_session_id: cleanSessionId,
+      });
+
+    if (!submission) {
+      throw new Error("Submission was not found for this session.");
+    }
+
+    const { attachedFiles, skippedFiles } = await loadEvaluationFiles(
+      db,
+      submission,
+    );
+    const scorecard = await callGroqEvaluator(
+      submission,
+      attachedFiles,
+      skippedFiles,
+    );
+    const evaluatedAt = new Date();
+
+    await db.collection("assessment_evaluations").updateOne(
+      { assessment_session_id: cleanSessionId },
+      {
+        $set: {
+          provider: "groq",
+          model: GROQ_MODEL,
+          candidate_id: submission.candidate_id ?? null,
+          assessment_session_id: cleanSessionId,
+          scorecard,
+          attached_files: attachedFiles.map((file) => ({
+            id: file.id,
+            label: file.label,
+            filename: file.filename,
+            content_type: file.contentType,
+            size: file.buffer.length,
+          })),
+          skipped_files: [
+            ...skippedFiles,
+            ...scorecard.skipped_files,
+          ],
+          evaluated_at: evaluatedAt,
+          updated_at: evaluatedAt,
+        },
+        $setOnInsert: {
+          created_at: evaluatedAt,
+        },
+      },
+      { upsert: true },
+    );
+
+    await db.collection("assessment_submissions").updateOne(
+      { assessment_session_id: cleanSessionId },
+      {
+        $set: {
+          evaluation_status: "done",
+          evaluation_error: null,
+          evaluation_scorecard: scorecard,
+          evaluation_overall_score: scorecard.overall_score,
+          evaluation_recommendation: scorecard.recommendation,
+          evaluation_summary: scorecard.summary,
+          evaluated_at: evaluatedAt,
+          updated_at: evaluatedAt,
+        },
+      },
+    );
+
+    return scorecard;
+  } catch (error) {
+    const failedAt = new Date();
+    const message =
+      error instanceof Error ? error.message : "Evaluation failed.";
+
+    await db.collection("assessment_submissions").updateOne(
+      { assessment_session_id: cleanSessionId },
+      {
+        $set: {
+          evaluation_status: "failed",
+          evaluation_error: message,
+          evaluation_failed_at: failedAt,
+          updated_at: failedAt,
+        },
+      },
+    );
+
+    throw error;
+  }
+}
+
+async function loadEvaluationFiles(
+  db: Db,
+  submission: SubmissionDocument,
+) {
+  const refs = [
+    {
+      label: "Website redesign file",
+      id: submission.website_file_id,
+    },
+    {
+      label: "Healthcare product flow file",
+      id: submission.healthcare_file_id,
+    },
+    {
+      label: "LinkedIn supporting graphic file",
+      id: submission.linkedin_graphic_file_id,
+    },
+  ];
+
+  const attachedFiles: StoredUpload[] = [];
+  const skippedFiles: SkippedFile[] = [];
+
+  for (const ref of refs) {
+    if (!ref.id) continue;
+
+    if (!ObjectId.isValid(ref.id)) {
+      skippedFiles.push({
+        label: ref.label,
+        reason: "Invalid GridFS file id.",
+      });
+      continue;
+    }
+
+    const file = await downloadFromGridFS(db, ref.id, ref.label);
+
+    if (!file) {
+      skippedFiles.push({
+        label: ref.label,
+        reason: "File id was saved on the submission, but the GridFS file was not found.",
+      });
+      continue;
+    }
+
+    if (!["image/png", "image/jpeg"].includes(file.contentType)) {
+      skippedFiles.push({
+        label: ref.label,
+        reason:
+          file.contentType === "application/pdf"
+            ? "PDF evaluation is skipped in the temporary Groq image-evaluation path."
+            : `Unsupported content type for Groq image evaluation: ${file.contentType}.`,
+      });
+      continue;
+    }
+
+    if (file.buffer.length > MAX_EVAL_IMAGE_BYTES) {
+      skippedFiles.push({
+        label: ref.label,
+        reason: "Image is too large for the temporary Groq test evaluator.",
+      });
+      continue;
+    }
+
+    attachedFiles.push(file);
+  }
+
+  return { attachedFiles, skippedFiles };
+}
+
+async function downloadFromGridFS(
+  db: Db,
+  fileId: string,
+  label: string,
+): Promise<StoredUpload | null> {
+  const _id = new ObjectId(fileId);
+  const meta = await db.collection("uploads.files").findOne({ _id });
+
+  if (!meta) return null;
+
+  const bucket = new GridFSBucket(db, { bucketName: "uploads" });
+  const chunks: Buffer[] = [];
+
+  for await (const chunk of bucket.openDownloadStream(_id)) {
+    chunks.push(Buffer.from(chunk as Buffer));
+  }
+
+  return {
+    id: fileId,
+    label,
+    filename: String(meta.filename ?? "uploaded-file"),
+    contentType:
+      (meta.metadata?.contentType as string | undefined) ||
+      (meta.contentType as string | undefined) ||
+      "application/octet-stream",
+    buffer: Buffer.concat(chunks),
+  };
+}
+
+async function callGroqEvaluator(
+  submission: SubmissionDocument,
+  attachedFiles: StoredUpload[],
+  skippedFiles: SkippedFile[],
+) {
+  if (!process.env.GROQ_API_KEY) {
+    throw new Error("Missing GROQ_API_KEY environment variable.");
+  }
+
+  const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  const content: Array<
+    | { type: "text"; text: string }
+    | { type: "image_url"; image_url: { url: string; detail: "high" } }
+  > = [
+      {
+        type: "text",
+        text: buildEvaluationPrompt(submission, attachedFiles, skippedFiles),
+      },
+    ];
+
+  for (const file of attachedFiles) {
+    content.push({
+      type: "image_url",
+      image_url: {
+        url: `data:${file.contentType};base64,${file.buffer.toString("base64")}`,
+        detail: "high",
+      },
+    });
+  }
+
+  const completion = await client.chat.completions.create({
+    model: GROQ_MODEL,
+    temperature: 0.2,
+    max_completion_tokens: 2500,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are a senior product design evaluator. Return only valid JSON.",
+      },
+      {
+        role: "user",
+        content,
+      },
+    ],
+  });
+
+  const raw = completion.choices[0]?.message?.content;
+
+  if (!raw) {
+    throw new Error("Groq returned an empty evaluation response.");
+  }
+
+  return parseScorecard(raw);
+}
+
+function buildEvaluationPrompt(
+  submission: SubmissionDocument,
+  attachedFiles: StoredUpload[],
+  skippedFiles: SkippedFile[],
+) {
+  return `
+Evaluate this Senior Full Stack Designer assessment submission.
+
+Use these rubric dimensions exactly:
+${rubricDimensions.map((item) => `- ${item}`).join("\n")}
+
+Score each dimension from 1 to 10:
+1 = poor or missing
+2-3 = weak
+4-5 = acceptable
+6-7 = strong
+8-9 = excellent
+10 = exceptional
+
+Return only JSON with this exact shape:
+{
+  "dimensions": [
+    { "name": "Website visual hierarchy, clarity, and polish", "score": 1, "note": "short evidence-backed note" }
+  ],
+  "overall_score": 1,
+  "summary": "short hiring-review summary",
+  "recommendation": "strong_yes | yes | maybe | no",
+  "skipped_files": [
+    { "label": "file label", "reason": "why it was not evaluated" }
+  ]
+}
+
+Submission text and links:
+
+Task 1 - Website Redesign
+Figma link: ${submission.website_figma_link || "Not provided"}
+Uploaded file name: ${submission.website_file_name || "Not provided"}
+Walkthrough URL: ${submission.website_walkthrough_url || "Not provided"}
+Explanation:
+${submission.website_explanation || "Not provided"}
+
+Task 2 - Healthcare Product UI Flow
+Figma link: ${submission.healthcare_figma_link || "Not provided"}
+Uploaded file name: ${submission.healthcare_file_name || "Not provided"}
+Explanation:
+${submission.healthcare_explanation || "Not provided"}
+
+Task 3 - LinkedIn B2B Asset
+Graphic Figma link: ${submission.linkedin_graphic_figma_link || "Not provided"}
+Uploaded graphic file name: ${submission.linkedin_graphic_file_name || "Not provided"}
+LinkedIn post:
+${submission.linkedin_post || "Not provided"}
+
+Attached image files available for visual review:
+${attachedFiles.length
+      ? attachedFiles
+        .map(
+          (file, index) =>
+            `${index + 1}. ${file.label}: ${file.filename} (${file.contentType})`,
+        )
+        .join("\n")
+      : "None"
+    }
+
+Files skipped before model evaluation:
+${skippedFiles.length
+      ? skippedFiles
+        .map((file) => `- ${file.label}: ${file.reason}`)
+        .join("\n")
+      : "None"
+    }
+
+Important:
+- If a visual file is attached, use it as evidence in the relevant dimension notes.
+- If a task only has a Figma link and no attached image, evaluate the written reasoning but note that the visual artifact was not directly visible.
+- Keep notes concise and specific.
+`;
+}
+
+function parseScorecard(raw: string) {
+  try {
+    return scorecardSchema.parse(JSON.parse(raw));
+  } catch {
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+
+    if (!jsonMatch) {
+      throw new Error("Groq did not return parseable JSON.");
+    }
+
+    return scorecardSchema.parse(JSON.parse(jsonMatch[0]));
+  }
 }
