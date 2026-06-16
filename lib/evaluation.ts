@@ -391,7 +391,7 @@ Task 3 - LinkedIn B2B Asset
 Graphic Figma link: ${submission.linkedin_graphic_figma_link || "Not provided"}
 Uploaded graphic file name: ${submission.linkedin_graphic_file_name || "Not provided"}
 LinkedIn post:
-${submission.linkedin_post || "Not provided"}
+${submission.linkedin_post || "Not provided"} 
 
 Attached image files available for visual review:
 ${attachedFiles.length
