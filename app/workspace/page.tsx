@@ -153,16 +153,16 @@ export default function WorkspacePage() {
 
   const task1Done = Boolean(
     (draft.websiteFigmaLink || draft.websiteFileName) &&
-      draft.websiteExplanation &&
-      draft.videoUrl,
+    draft.websiteExplanation &&
+    draft.videoUrl,
   );
   const task2Done = Boolean(
     (draft.healthcareFigmaLink || draft.healthcareFileName) &&
-      draft.healthcareExplanation,
+    draft.healthcareExplanation,
   );
   const task3Done = Boolean(
     draft.linkedinPost.trim() &&
-      (draft.marketingFileName || draft.marketingFigmaLink),
+    (draft.marketingFileName || draft.marketingFigmaLink),
   );
   const tabs = [
     {
@@ -408,11 +408,10 @@ export default function WorkspacePage() {
                   type="button"
                   onClick={() => setActiveTab(index)}
                   suppressHydrationWarning
-                  className={`flex flex-1 items-center justify-center gap-2 whitespace-nowrap px-3 py-2.5 text-[13px] font-semibold transition-colors ${
-                    isActive
+                  className={`flex flex-1 items-center justify-center gap-2 whitespace-nowrap px-3 py-2.5 text-[13px] font-semibold transition-colors ${isActive
                       ? "bg-[var(--ink-900)] text-white"
                       : "text-[var(--ink-muted)] hover:bg-[var(--sky-50)]"
-                  }`}
+                    }`}
                 >
                   <span className="mono flex h-5 w-5 items-center justify-center text-[11px]">
                     {tab.done ? (
@@ -508,7 +507,7 @@ export default function WorkspacePage() {
                     <p className="mt-2 text-sm leading-6 text-[var(--ink-muted)]">
                       Map the journey from intake to translated conversation.
                       Show key patient + clinician screens and the real-time
-                      states â€” listening, translating, reviewing, confirming.
+                      states listening, translating, reviewing, confirming.
                       Address consent and accessibility.
                     </p>
                   </div>
