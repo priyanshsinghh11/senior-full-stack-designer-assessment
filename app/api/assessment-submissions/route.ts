@@ -79,6 +79,8 @@ export async function POST(request: Request) {
           ai_workflow_note: draft.aiWorkflowNote.trim() || null,
           ai_assist_level: draft.aiAssistLevel || null,
           submitted_payload: draft,
+          evaluation_status: "pending",
+          evaluation_error: null,
           submitted_at: submittedAt,
           updated_at: submittedAt,
         },
